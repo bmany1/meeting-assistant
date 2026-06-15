@@ -1,0 +1,1000 @@
+{
+ "claims": [
+  {
+   "claim": "LangExtract grounds every extraction to an exact character-offset location in the source text, and extractions that cannot be located in the source (char_interval = None) are treated as suspect and recommended for filtering \u2014 i.e., verbatim anchorability is used as an automatic trust check on LLM-extracted items. Implication for the plan: confirms the quote-grounded extraction approach (todos with source snippets); the verification screen can deterministically validate each item by substring-matching its source snippet against the note and flag/demote items that don't anchor, with zero extra AI calls.",
+   "quote": "Maps every extraction to its exact location in the source text, enabling visual highlighting for easy traceability",
+   "importance": "central",
+   "source": "https://github.com/google/langextract\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "A documented failure mode of LLM extraction is fabricating items by copying from few-shot examples rather than the actual input, which LangExtract detects via character-interval validation. Implication for the plan: hallucinated action items are an expected, named failure mode, not an edge case; any few-shot examples embedded in the extraction prompt risk leaking into output, so the plan's verification step should specifically check that each extracted item's snippet exists verbatim in the pasted note.",
+   "quote": "LLMs may occasionally extract content from few-shot examples rather than the input text.",
+   "importance": "central",
+   "source": "https://github.com/google/langextract\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "For long documents, recall is improved by an explicit strategy of text chunking plus multiple extraction passes (e.g., extraction_passes=3 on a ~148k-character text), because a single pass misses items ('needle-in-a-haystack'). Implication for the plan: challenges a single fixed-item-cap extraction pass for multi-page note dumps \u2014 under a 1000-output-token cap, one pass over a long paste will systematically miss items; the plan's 'one additive conversational re-run' is a partial version of multi-pass recall and may warrant chunked or repeated passes for long inputs.",
+   "quote": "Overcomes the 'needle-in-a-haystack' challenge of large document extraction by using an optimized strategy of text chunking, parallel processing, and multiple passes for higher recall.",
+   "importance": "central",
+   "source": "https://github.com/google/langextract\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Schema-adherent structured output is achieved by enforcing the schema through few-shot examples whose extraction_text is verbatim from the example source, with controlled generation only available on supported models like Gemini. Implication for the plan: the artifact's keyless Anthropic call has no controlled-generation/structured-output mode, so schema reliability must come from prompt-side few-shot examples with verbatim snippets plus the planned defensive JSON parsing \u2014 confirming stripJSONFences + safeParseJSON as necessary rather than optional.",
+   "quote": "Enforces a consistent output schema based on your few-shot examples, leveraging controlled generation in supported models like Gemini to guarantee robust, structured results.",
+   "importance": "supporting",
+   "source": "https://github.com/google/langextract\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "The recommended human review surface renders extracted entities highlighted in their original source context (an interactive HTML visualization), i.e., review happens against the source text, not against a detached list of extracted items. Implication for the plan: supports designing the verification/accept screen so each proposed todo/decision is shown alongside (or highlighted within) its source snippet from the note, which is what makes accept/reject judgments fast and trustworthy.",
+   "quote": "a self-contained, interactive HTML file to visualize and review thousands of extracted entities in their original context",
+   "importance": "supporting",
+   "source": "https://github.com/google/langextract\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "For long meeting transcripts, a map-reduce chunking strategy is recommended: split at speaker-turn boundaries with 10-20% token overlap per chunk, run extraction prompts per chunk in parallel, then merge and deduplicate the outputs. This implies the plan's single-pass extraction with a fixed item cap will under-extract on multi-page note dumps unless input is segmented; a chunk-then-merge approach (sequential, since no background jobs) with dedup at merge time would mitigate it, and the plan's dismissal tombstones keyed by normalized text already align with the dedup-on-merge requirement.",
+   "quote": "Use a map-reduce chunking strategy (process chunks in parallel, then merge results): split the diarized transcript at speaker turn boundaries with a 10-20% token overlap per chunk, run your extraction prompts per chunk in parallel, then merge and deduplicate chunk outputs.",
+   "importance": "central",
+   "source": "https://www.gladia.io/blog/transcript-to-actionable-notes-llm\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "LLMs systematically deprioritize content in the middle of long inputs (the 'lost-in-the-middle' effect, citing Liu et al., arXiv:2307.03172), so action items buried mid-transcript are disproportionately missed. This challenges feeding a whole multi-page paste as one extraction call: missed-item failures will cluster in the middle of long notes, strengthening the case for segmenting long inputs even though the artifact's 1000-output-token cap already pressures toward smaller passes.",
+   "quote": "LLMs exhibit what researchers call a 'lost-in-the-middle' effect, information placed in the middle of long inputs receives less processing weight than content near the beginning or end.",
+   "importance": "central",
+   "source": "https://www.gladia.io/blog/transcript-to-actionable-notes-llm\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Packing multiple extraction tasks (todos, decisions, completions, rolling summary) into one prompt causes 'instruction dilution': effective attention per task drops with each added instruction, producing hallucinated action items and misattributed decisions. This challenges the spec's single 'Save and analyze' call that returns todos + decisions + completions + updated summary in one JSON blob; splitting into separate calls (or at least separating summary-update from item extraction) should measurably reduce extraction errors.",
+   "quote": "Instruction dilution compounds this: when a single prompt contains multiple extraction tasks, the model's effective attention per task drops with each added instruction.",
+   "importance": "central",
+   "source": "https://www.gladia.io/blog/transcript-to-actionable-notes-llm\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Extractions should be grounded by having the LLM return supporting source references (utterance indices/segments) alongside each extracted item, enabling users to verify each item against the source, and hallucinations can be caught mechanically by checking that referenced entities actually exist in the source. This confirms the plan's quote-grounded source-snippet approach and verification screen, and suggests a cheap deterministic validity check: reject extracted items whose source snippet does not appear (fuzzily) in the pasted notes, no extra AI call needed.",
+   "quote": "For your UI to let users verify summaries against source audio, store the timestamp range that each summary bullet was derived from by asking the LLM to return both the summary text and the supporting utterance indices, then resolve those indices to timestamps using your state object.",
+   "importance": "central",
+   "source": "https://www.gladia.io/blog/transcript-to-actionable-notes-llm\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "The most reliable production quality metrics for action-item extraction are edit rate (fraction of items users modify before acting), owner resolution accuracy, and deadline parsability. This supports the plan's hybrid verification design (inline edits as the primary correction path) and suggests the app could trivially track edit rate during verification as a self-measure of extraction trust over time.",
+   "quote": "The most reliable production metrics for action item quality are edit rate (what fraction of extracted items users modify before acting on them), owner resolution accuracy (what fraction of items have a valid assignee who was actually in the meeting), and deadline parsability (what fraction of deadlines are valid ISO dates).",
+   "importance": "supporting",
+   "source": "https://www.gladia.io/blog/transcript-to-actionable-notes-llm\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Repeated compression of history (rolling/incremental summarization) progressively discards detail until the stored memory no longer matches what actually happened \u2014 a named failure mode called summarization drift. This implies a rolling summary should never be the source of truth and derived state should be rebuildable from original records, confirming the plan's wholesale-rebuilt ledger over per-source truth records.",
+   "quote": "Summarization drift occurs when you repeatedly compress history to fit it within a context window. Each compression/summarization throws away details, and eventually, you're left with memory that doesn't really match what happened.",
+   "importance": "central",
+   "source": "https://towardsdatascience.com/a-practical-guide-to-memory-for-autonomous-llm-agents/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "MemGPT-style hierarchical/tiered virtual-context memory architectures impose maintenance overhead that tends to fail, and the author has seen no production adoption nearly 3 years after the paper \u2014 challenging any temptation to import OS-style memory paging into the token-capped client-only artifact, and supporting the plan's simpler flat-index approach.",
+   "quote": "While this category is interesting, the overhead/work of maintaining these separate tiers is burdensome and tends to fail. The MemGPT paper and git repo are both almost 3 years old, and I have yet to see any actual use in production.",
+   "importance": "central",
+   "source": "https://towardsdatascience.com/a-practical-guide-to-memory-for-autonomous-llm-agents/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Memory systems whose pruning, eviction, or archival policies misbehave often fail silently, with no thrown errors and only symptomatic degradation \u2014 relevant to the plan's dismissal tombstones and ledger-rebuild logic, which need observable invariants or verification rather than assumed correctness.",
+   "quote": "Silent orchestration failures are the most dangerous in this category. Paging, eviction, or archival policies do the wrong things, but no errors are thrown...",
+   "importance": "supporting",
+   "source": "https://towardsdatascience.com/a-practical-guide-to-memory-for-autonomous-llm-agents/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "When a system treats a stored memory as ground truth and that memory is wrong, errors self-reinforce in future decisions (confirmation loops) \u2014 supporting the plan's hybrid human verification step before extracted items enter the ledger, since unverified extractions would compound across the rolling summary and cockpit ranking.",
+   "quote": "Self-reinforcing errors (confirmation loops) occur when a system treats a memory as ground truth, but that memory is wrong.",
+   "importance": "supporting",
+   "source": "https://towardsdatascience.com/a-practical-guide-to-memory-for-autonomous-llm-agents/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Effective agent memory is a write-manage-read loop with an explicit manage (pruning/compression) phase, not just store-and-retrieve \u2014 adding to the plan: the once-daily cached focus narrative and staleness sweep constitute the 'manage' phase and should be designed as a deliberate stage, not an afterthought.",
+   "quote": "The paper characterizes agent memory as a write-manage-read loop, not just 'store and retrieve.'",
+   "importance": "supporting",
+   "source": "https://towardsdatascience.com/a-practical-guide-to-memory-for-autonomous-llm-agents/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Forcing LLMs to respond in structured formats such as JSON significantly degrades their reasoning performance compared with free-form natural language responses, and stricter format constraints cause greater degradation. This bears directly on the plan's extraction prompts that demand strict JSON: inference-heavy fields (inferred due dates, inferred completions, priority) are reasoning tasks and may be measurably worse when the model must emit JSON in the same pass.",
+   "quote": "Surprisingly, we observe a significant decline in LLMs' reasoning abilities under format restrictions. Furthermore, we find that stricter format constraints generally lead to greater performance degradation in reasoning tasks.",
+   "importance": "central",
+   "source": "https://arxiv.org/html/2408.02442v1\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "The performance drop under format restriction is not explained by parse failures: several models produce near-zero unparseable outputs yet still lose substantial accuracy, meaning the format constraint harms the generation/reasoning process itself. Implication for the plan: stripJSONFences + safeParseJSON guards against the rare failure mode (malformed JSON) but does nothing about the common one (well-formed JSON containing worse extractions), so the human verification screen is the real safety net, not the parser.",
+   "quote": "In fact, Gemini 1.5 Flash and GPT 3.5 Turbo exhibit near zero parsing failures in all three formats.",
+   "importance": "central",
+   "source": "https://arxiv.org/html/2408.02442v1\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "A two-step 'NL-to-Format' pipeline, where the model first answers in free natural language and a second call converts that answer into the target schema, recovers the reasoning performance lost to format restriction. Implication: the plan's single-pass strict-JSON extraction trades quality for call count; if extraction quality proves poor on hard inferences, a two-call reason-then-format pass is the documented mitigation, though it doubles latency and interacts with the 1000-token output cap.",
+   "quote": "This two-step process first instructs the LLM to answer the question in natural language, and then instructs it to convert its response into the target format schema.",
+   "importance": "central",
+   "source": "https://arxiv.org/html/2408.02442v1\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "For classification-style tasks the effect reverses: JSON mode improves accuracy by constraining the answer space (e.g., Gemini-1.5-Flash on DDXPlus scored 60.36% with JSON vs 41.59% natural language). Implication: structured output is fine, even beneficial, for enum-like extraction fields (priority level, item type, completion status), so the plan can keep strict JSON for those while being skeptical mainly of free-inference fields.",
+   "quote": "JSON-mode improves classification task performance by constraining possible answers resulted in reducing errors in answer selection.",
+   "importance": "supporting",
+   "source": "https://arxiv.org/html/2408.02442v1\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "The size of the JSON-induced reasoning penalty varies enormously by model: on Last Letter Concatenation, GPT-3.5-Turbo fell from 56.74% (text) to 25.20% (JSON), while Claude-3-Haiku showed a negligible difference (57.67% vs 56.74%). Notably the tested Claude model was among the most robust to format restriction, weakly favorable evidence for the plan's Claude-based single-pass JSON extraction, but the effect must be re-verified on the actual production model (claude-sonnet-4-6).",
+   "quote": "on Last Letter Concatenation with Claude-3-Haiku, JSON format yielded 56.74% accuracy versus 57.67% for natural language\u2014a negligible difference. However, GPT-3.5-Turbo showed dramatic variance: 56.74% (text) versus 25.20% (JSON)",
+   "importance": "supporting",
+   "source": "https://arxiv.org/html/2408.02442v1\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "To-do systems fail primarily through non-review: users keep capturing tasks but stop looking at the list, and this breakdown is driven by the app or system not fitting the user's personal workflow. This implies the plan's cockpit succeeds or fails on whether Bryan forms a daily review habit, not on ranking-formula sophistication \u2014 supporting the once-daily cached AI focus narrative as a habit anchor over heavier mechanics.",
+   "quote": "We add things, but don't review the list. Part of this is trying to use a to do list app or system that doesn't fit with your workflow.",
+   "importance": "central",
+   "source": "https://zapier.com/blog/why-you-hate-every-to-do-list-app/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "The recommended practice for making a to-do system stick is checking the list on a fixed cadence (morning and afternoon reviews), prompted by notifications or widgets. For the plan: the app has no background jobs or push, so the once-daily refresh-on-open narrative is the only available equivalent of this cadence prompt; an external nudge (bookmark routine) carries the habit, which the plan cannot enforce in-app.",
+   "quote": "Check your list regularly",
+   "importance": "supporting",
+   "source": "https://zapier.com/blog/why-you-hate-every-to-do-list-app/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "No single task-management approach works universally because task organization needs (projects, headers, subtasks, due dates, priority levels) vary by individual; the article asserts task management is intensely personal. This mildly supports the plan's solo-user framing: deterministic heuristics tuned to one user are viable where a general-purpose formula would not be.",
+   "quote": "Task management is intensely personal.",
+   "importance": "supporting",
+   "source": "https://zapier.com/blog/why-you-hate-every-to-do-list-app/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "To-do apps face a forced design tradeoff: emphasizing one organizational element necessarily downplays others (e.g., OmniFocus's comprehensiveness reads as clutter to some users, Apple Reminders' minimalism reads as limiting to others). This challenges any temptation to grow the cockpit into a full feature surface \u2014 keeping it a minimal ranked list plus narrative is the defensible position.",
+   "quote": "Emphasizing one of these things means, by necessity, downplaying another.",
+   "importance": "tangential",
+   "source": "https://zapier.com/blog/why-you-hate-every-to-do-list-app/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Task manager UIs that aggressively signal overdue items (red coloring, badges) increase user anxiety and are a primary driver of task-manager abandonment. This challenges any cockpit design that escalates stale/overdue items with loud visual urgency; the plan's overdue-or-untouched-N-days staleness signal should surface quietly, not shout.",
+   "quote": "They shout at you, making your tasks red, showing badges for the things that are 'overdue'.",
+   "importance": "central",
+   "source": "https://molodtsov.me/2021/03/why-youve-dropped-your-task-manager/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "When users repeatedly see late tasks roll over day after day, they develop habituation akin to ad blindness and start ignoring lateness signals entirely. This directly supports the plan's snooze/dismiss tombstone mechanic and warns that resurfaced items must change state or disappear rather than persistently re-rolling, or escalation will train the user to ignore the cockpit.",
+   "quote": "people get something similar to ad blindness \u2013 their mind actively avoids the idea that they're late for something and the thing just keeps getting rolled over.",
+   "importance": "central",
+   "source": "https://molodtsov.me/2021/03/why-youve-dropped-your-task-manager/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Separating start date from due date (as Things 3 does) prevents tasks without real deadlines from appearing falsely overdue in the Today view, which the author credits as a key feature keeping the system usable. Implies the plan's deterministic ranking should not treat inferred/soft due dates from extraction as hard overdue triggers.",
+   "quote": "First, Things 3 distinguishes between the start date and the due date for each task.",
+   "importance": "supporting",
+   "source": "https://molodtsov.me/2021/03/why-youve-dropped-your-task-manager/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Framing the todo list as a record of things not to forget rather than a queue that must reach zero is, per the author, the single most important mindset for sustained use. Implies the daily cockpit/focus narrative should avoid inbox-zero framing and instead emphasize picking the right few items.",
+   "quote": "The most important thing: it's OK if your todo list is never empty.",
+   "importance": "supporting",
+   "source": "https://molodtsov.me/2021/03/why-youve-dropped-your-task-manager/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "The author implements GTD-style waiting-for tracking as a dedicated 'Watch' list for delegated items awaiting external replies, kept separate from personal action items. Supports giving 'waiting on someone else' items a distinct state in the follow-through loop rather than ranking them alongside owned todos.",
+   "quote": "Watch \u2013 Tasks I delegated or waiting for external people to reply.",
+   "importance": "supporting",
+   "source": "https://molodtsov.me/2021/03/why-youve-dropped-your-task-manager/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Without constrained decoding, an instruction-tuned LLM's schema-compliant JSON output rate degrades steeply with schema complexity: empirical coverage was 0.90 on easy function-calling schemas (GlaiveAI) but fell to 0.38 (GitHub Medium), 0.21 (JSONSchemaStore), and 0.13 (GitHub Hard). Since the claude.ai artifact runtime offers no constrained decoding, this implies the plan's extraction schema must stay flat and simple, and defensive parsing (safeParseJSON with fallback) is mandatory, not optional.",
+   "quote": "LM-only...achieve acceptable coverage on easy-to-medium datasets but show significant performance drops on harder datasets, such as Github Hard and JSON Schema Store, as well as domain-specific datasets like Washington Post.",
+   "importance": "central",
+   "source": "https://arxiv.org/html/2501.10868v1\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Even the best dedicated constrained-decoding frameworks do not reach 100% JSON schema compliance: Guidance achieved 98% and Outlines 96% on the GlaiveAI dataset, the easiest benchmark subset. This confirms that no extraction pipeline should ever trust raw LLM output to be valid JSON, supporting the plan's stripJSONFences + safeParseJSON + fallback decision.",
+   "quote": "Among open-source engines, guidance consistently demonstrates the highest compliance rate across all datasets, making it the most reliable option for ensuring schema compliance.",
+   "importance": "central",
+   "source": "https://arxiv.org/html/2501.10868v1\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Forcing structured output via constrained decoding does not degrade and actually improves downstream task quality by up to 4 percentage points (e.g., 83.8% vs 80.1% on GSM8K), rebutting the concern that demanding strict JSON format from the model hurts extraction quality.",
+   "quote": "Constrained decoding consistently improves the performance of downstream tasks up to 4%, even for tasks with minimal structure like GSM8k.",
+   "importance": "supporting",
+   "source": "https://arxiv.org/html/2501.10868v1\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "The benchmark is grounded in roughly 10,000 real-world JSON schemas (GitHub, Kubernetes, Snowplow, Washington Post, GlaiveAI, JSON Schema Store) with median schema depths of 2-8 levels and 6-175 fields, and compliance failures correlate with schema size and depth; a meeting-extraction schema (todos with priority/due-date/source-snippet, decisions, completions) sits at the shallow end of this range where compliance is highest.",
+   "quote": "10K real-world JSON schemas from various sources",
+   "importance": "supporting",
+   "source": "https://arxiv.org/html/2501.10868v1\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Constrained decoding engines exhibit a permissiveness trade-off in which some frameworks under-constrain rather than reject schemas (XGrammar showed 38 under-constrained failure categories vs 1 for Guidance), meaning even tool-enforced 'valid' output can violate the intended schema; client-side validation of parsed structure (required fields, types) is still needed after JSON.parse succeeds.",
+   "quote": "XGrammar minimizes compilation errors but shows the highest number of under-constrained failures, indicating a trade-off favoring permissiveness.",
+   "importance": "tangential",
+   "source": "https://arxiv.org/html/2501.10868v1\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "The concrete failure mode of last-write-wins under concurrent writes to the same key is a silent lost update: one of the two writes is discarded entirely rather than merged. This confirms the hazard the plan's wholesale-rebuild ledger design targets: any read-modify-write of a shared aggregate key (like app:ledger) can silently drop a concurrent update, so rebuilding the index wholesale from per-source truth records (each written to its own key) is the right mitigation, since per-key writes from a single user rarely collide and the index can always be regenerated from truth.",
+   "quote": "In some cases, LWW can be acceptable. However, in this case, the cost of LWW is a _lost update_: at time t5, you lose either the costume or the mask.",
+   "importance": "central",
+   "source": "https://dzone.com/articles/conflict-resolution-using-last-write-wins-vs-crdts\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "LWW systems pick the 'latest' write via timestamps, and machine clock drift makes that ordering unreliable even with NTP, with skews in the half-second range or more. For the plan this is mostly a non-issue (single user, single device, no replica clocks), but it implies the app should not build any logic that depends on timestamp comparison to decide which of two stored versions 'wins' across tabs or sessions; the wholesale-rebuild-from-truth approach sidesteps timestamp arbitration entirely.",
+   "quote": "We all know that clocks on machines drift, and it is easy to get skewed results. Even with NTP in place, skews can be in a half-second range, and maybe more.",
+   "importance": "supporting",
+   "source": "https://dzone.com/articles/conflict-resolution-using-last-write-wins-vs-crdts\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "LWW is an acceptable conflict-resolution strategy in some cases rather than universally wrong. This supports the plan's decision not to over-engineer around window.storage's LWW semantics: for a solo user with no real concurrency, accepting LWW per key and structuring data so writes never need merging (per-source records as truth, derived index rebuilt wholesale) is a defensible design rather than a compromise.",
+   "quote": "LWW isn't always the wrong approach to use.",
+   "importance": "supporting",
+   "source": "https://dzone.com/articles/conflict-resolution-using-last-write-wins-vs-crdts\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "CRDTs (e.g., OR-sets as used for set types in Redis and Riak) resolve concurrent writes with type-aware merge logic instead of discarding one write, but their stated payoff is geo-distributed apps and multi-region failover. This is the contrarian alternative to the plan's design, and the article's own framing suggests it does not apply: a single-user claude.ai artifact has no geo-distribution or failover, so adopting CRDT-style merging would add complexity without the conditions that justify it.",
+   "quote": "CRDTs can simplify development when it comes to geo-distributed apps. If you are simply looking for more reliable failover or looking to handle concurrent writes across geographies correctly, CRDTs can give you a leg up over LWW.",
+   "importance": "tangential",
+   "source": "https://dzone.com/articles/conflict-resolution-using-last-write-wins-vs-crdts\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Ink & Switch's Cambria prototypes that performed schema translation at write time (translating each change into all known related schemas on write) failed in practice, and the team concluded translations in decentralized/local-first systems must instead happen at read time. This bears directly on the plan's wholesale-rebuilt derived ledger: it confirms the pattern of keeping per-source records as immutable truth and deriving/translating at the point of use rather than merging or eagerly rewriting stored derived state, which is exactly the hazard class (concurrent/last-write-wins clobber) the plan's rebuild-from-truth decision avoids.",
+   "quote": "Data translations in decentralized systems should be performed on read, not on write. ... Some of our early prototypes for storing documents that were compatible with multiple schemas performed data translations at write time. When writing a change to a document, a client would also translate the change into all the other related schemas that it knew about. We eventually realized this was a flawed strategy.",
+   "importance": "central",
+   "source": "https://www.inkandswitch.com/cambria/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Forward compatibility (an older app reading data written in a newer schema) is rare in software and harder than backward compatibility. For the plan: the schema_version field in app:meta and the export payload covers backward migration on import, but the plan should explicitly define what happens when an older artifact version imports an export with a HIGHER schema_version (refuse gracefully with a message rather than parse-and-corrupt), since this exact v1-export-into-v2-artifact flow is the app's mandated migration path.",
+   "quote": "Forward compatibility, the ability to open documents in formats invented in the future, is rarer.",
+   "importance": "supporting",
+   "source": "https://www.inkandswitch.com/cambria/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Seemingly trivial data transformations are often lossy and only reliable in one direction (Cambria's example: firstName+lastName can be combined into fullName, but fullName cannot be reliably split back). This challenges/qualifies the plan's dismissal-tombstones-keyed-by-normalized-text decision: normalization is a one-way lossy transform, so the original raw text and source ref must be retained alongside the normalized key (never store only the normalized form), and the normalization function effectively becomes part of the schema, since changing it later orphans existing tombstones.",
+   "quote": "Imagine a lens that combines a `firstName` and `lastName` fields into a single `fullName`. This lens works reliably in one direction. ... Many apparently simple data transformations have surprising complexity.",
+   "importance": "supporting",
+   "source": "https://www.inkandswitch.com/cambria/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Cambria's primary mechanism for cross-version compatibility is filling added/removed fields with default values at translation time. This confirms a cheap migration strategy for the plan's client-only setting: prefer additive schema changes where new fields get defaults applied at read/import time, avoiding any stored-data rewrite pass, which window.storage's rate-limited, last-write-wins writes make risky.",
+   "quote": "Although Cambria has support for providing default data in the case of added or removed fields...",
+   "importance": "supporting",
+   "source": "https://www.inkandswitch.com/cambria/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Ink & Switch argues schema-version handling should live in one isolated translation layer rather than being scattered through application code. For the plan: route every storage read and every import through a single migrate(record, fromVersion) function so feature code only ever sees the current shape, keeping migration logic out of the 11 build units.",
+   "quote": "We propose a principled replacement for these messy solutions: an isolated software layer that translates data between schemas on demand.",
+   "importance": "tangential",
+   "source": "https://www.inkandswitch.com/cambria/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "LLM-based structured extraction frequently produces hallucinated outputs (plausible items unsupported by the source text), and the paper attributes the root cause to lack of provenance, i.e., outputs having no explicit link back to their textual origin, which makes faithfulness unverifiable.",
+   "quote": "However, LLMs frequently hallucinate\u2014generating plausible triplets unsupported by the source text. The root cause is the lack of provenance: existing methods produce triplets without explicit links to their textual origins, making faithfulness unverifiable.",
+   "importance": "central",
+   "source": "https://www.mdpi.com/2073-431X/15/3/178\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Constraining LLM extraction to anchors first identified in the source text (entities, relation phrases, values with precise positions, forming a constrained extraction vocabulary) is, per the paper's ablation studies, the primary mechanism by which hallucination is reduced.",
+   "quote": "Ablation studies confirm that anchor-based constraints are the primary mechanism for hallucination reduction... anchor discovery identifies entities, relation phrases, and attribute values with precise positions, forming a constrained extraction vocabulary",
+   "importance": "central",
+   "source": "https://www.mdpi.com/2073-431X/15/3/178\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Even with the anchor-constrained, provenance-tracked framework, measured hallucination rates ranged from 0.23% to 20.23% depending on model and dataset configuration, i.e., grounding reduces but does not eliminate hallucination, so downstream verification (e.g., human review) remains necessary.",
+   "quote": "Dedicated analyses of anchor discovery quality, computational cost (2.83\u20134.28 LLM calls per sample), and hallucination rates (0.23\u201320.23% across model\u2013dataset configurations) provide insights into the framework's practical applicability and limitations.",
+   "importance": "central",
+   "source": "https://www.mdpi.com/2073-431X/15/3/178\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "A full grounded extraction pipeline with machine-side verification (anchor discovery, grounded extraction, restoration-based verification, supplement) costs 2.83\u20134.28 LLM calls per input sample, which is significantly more expensive than single-pass extraction; under a client-only, token-capped, user-triggered-call budget this favors single-pass extraction plus human verification over multi-call machine self-verification.",
+   "quote": "computational cost (2.83\u20134.28 LLM calls per sample)",
+   "importance": "supporting",
+   "source": "https://www.mdpi.com/2073-431X/15/3/178\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "The framework pairs verification (which filters bad extractions) with an explicit coverage-aware supplement stage (a follow-up pass to catch items the first pass missed), treating missed-item recall as a distinct failure mode requiring its own additive re-run rather than being solved by the initial extraction alone.",
+   "quote": "restoration-based verification validates triplets through hierarchical matching, with a coverage-aware supplement ensuring comprehensive extraction",
+   "importance": "supporting",
+   "source": "https://www.mdpi.com/2073-431X/15/3/178\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Iterated rolling summarization progressively destroys low-frequency but high-importance details: each compression pass discards rare details, and after roughly three summary cycles (e.g., one week of 50 interactions/day) a critical one-off instruction from early history tends to vanish entirely. This challenges any architecture that chains summaries of summaries and confirms the plan's choice to keep per-source records as the source of truth and rebuild derived state wholesale from raw records rather than incrementally updating a rolling summary; it also flags the meeting app's per-meeting 'rolling summary' field as a drift risk needing periodic regeneration from raw notes.",
+   "quote": "Each compression pass silently discards low-frequency details. After enough passes, the agent 'remembers' a sanitized, generic version of history\u2014precisely the kind of memory that fails on edge cases. ... A rare but critical instruction from day one\u2014say, 'never call the production database directly'\u2014may survive the first compression but is exactly the kind of low-frequency, high-importance detail that tends to vanish by the third pass.",
+   "importance": "central",
+   "source": "https://arxiv.org/html/2603.07670v1\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "A well-designed memory write path requires three specific operations before persisting records: filtering out low-signal items, canonicalizing dates/names/quantities into normalized forms, and deduplicating overlapping entries. This directly supports two plan decisions: the fixed item-cap per extraction pass (write-path filtering) and dismissal tombstones keyed by normalized text + source ref (canonicalization plus dedup), implying normalization of dates/names should happen at accept time, not read time.",
+   "quote": "A well-designed write path includes: filtering to reject low-signal records, canonicalization to normalize dates, names, and quantities, deduplication to merge overlapping entries",
+   "importance": "central",
+   "source": "https://arxiv.org/html/2603.07670v1\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "The Generative Agents memory-stream architecture scores retrieval candidates by a weighted combination of recency (exponential decay), relevance (embedding similarity), and self-assessed importance, and this multi-signal scoring measurably outperforms pure cosine-similarity retrieval. The recency-decay and importance components are fully deterministic and embedding-free, so they transfer directly to the plan's client-only deterministic ranked cockpit (recency/staleness decay plus priority weight), confirming that a deterministic multi-signal formula is a research-grounded ranking approach rather than a compromise.",
+   "quote": "Retrieval scores memories by a weighted mix of recency (exponential decay), relevance (embedding similarity), and importance (a self-assessed integer). This multi-signal scoring is a substantial improvement over pure cosine similarity.",
+   "importance": "supporting",
+   "source": "https://arxiv.org/html/2603.07670v1\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Models that achieve near-perfect scores on the passive-recall benchmark LoCoMo drop to 40-60% on MemoryArena, which interleaves memory with decision-making, demonstrating a large measured gap between an LLM recalling stored facts and correctly acting on them. This supports the plan's decision to keep follow-through logic (staleness = overdue-or-untouched-N-days, ranking) deterministic in app code and use the once-daily AI call only for a narrative layer on top, rather than trusting the LLM to decide what needs attention from memory.",
+   "quote": "Models that score near-perfectly on LoCoMo plummet to 40\u201360% in MemoryArena, exposing a deep gap between passive recall and active, decision-relevant memory use.",
+   "importance": "supporting",
+   "source": "https://arxiv.org/html/2603.07670v1\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Promotion of episodic records into durable semantic memory (consolidation) is rarely automatic in current LLM agent systems; it requires explicit prompting or heuristic triggers. Applied to the plan: extracted action items should not silently graduate into the durable ledger; the human-in-the-loop accept step (hybrid verification with inline no-AI edits) is the explicit consolidation trigger, consistent with the state of the art rather than a temporary crutch to be automated away.",
+   "quote": "This consolidation is rarely automatic; most current systems require explicit prompting or heuristic triggers.",
+   "importance": "supporting",
+   "source": "https://arxiv.org/html/2603.07670v1\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "In Microsoft's deployed LLM meeting-recap prototype, every study participant relied on expanding an extracted note or task back into the original transcript dialog to judge whether it was correct. This confirms the plan's quote-grounded extraction decision: each extracted todo/decision should carry a verbatim source snippet, and the verification screen should let the user view that source context inline before accepting.",
+   "quote": "All participants used the ability to expand the 'context' of a summary into the original dialog to make sense of a suggested note, suggested task, or a low-level summary",
+   "importance": "central",
+   "source": "https://www.researchgate.net/publication/372785084_Summaries_Highlights_and_Action_items_Design_implementation_and_evaluation_of_an_LLM-powered_meeting_recap_system\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Wrong person/owner attribution is a documented, frequent failure mode of LLM meeting extraction: 4 of 7 participants saw summaries attributing content to them with the wrong pronoun (the paper notes this was worse for non-Western names). For the plan, this challenges any flow that auto-accepts owner fields: the verification screen must make owner/name assignments visibly editable per item, not buried.",
+   "quote": "Four participants indicated that the model generated summaries with their names associated with the wrong pronoun.",
+   "importance": "central",
+   "source": "https://www.researchgate.net/publication/372785084_Summaries_Highlights_and_Action_items_Design_implementation_and_evaluation_of_an_LLM-powered_meeting_recap_system\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "User deletions of AI-extracted tasks are an ambiguous signal with at least three distinct meanings (task completed, redundant, or inaccurate extraction), whereas adds and edits were consistently interpreted. This challenges the dismissal-tombstone decision if dismissals are ever treated as 'this extraction was wrong': a tombstone keyed by normalized text + source ref is fine for suppressing resurfacing, but should not be fed back to the model or used as a correctness signal without capturing the dismissal reason.",
+   "quote": "Two participants reported that they might delete a task when it is done, three reported they might delete a task if it is redundant, and two others reported they might delete the task if it is inaccurate.",
+   "importance": "central",
+   "source": "https://www.researchgate.net/publication/372785084_Summaries_Highlights_and_Action_items_Design_implementation_and_evaluation_of_an_LLM-powered_meeting_recap_system\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "The system handled long transcripts under hard model token limits by segmenting input into overlapping fixed-size windows (30 utterances, stride 10) and running a two-step hierarchical pipeline (segment into chapters, then synthesize each). This supports the plan's fixed item-cap per extraction pass under the 1000-output-token ceiling: established practice for variable-length meeting input is bounded-window, multi-pass extraction rather than one monolithic call.",
+   "quote": "We split the transcripts into overlapping windows of 30 utterances with a stride of 10.",
+   "importance": "central",
+   "source": "https://www.researchgate.net/publication/372785084_Summaries_Highlights_and_Action_items_Design_implementation_and_evaluation_of_an_LLM-powered_meeting_recap_system\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Extraction errors did not destroy the recap's usefulness when the structured presentation (chapter headers, skimmable hierarchy) still supported recall: 3 of 7 participants noticed errors yet recall was unaffected. This supports the plan's progressive-trust framing: an imperfect extraction surfaced behind a cheap human review/edit step retains value, so hybrid verification with inline edits (no AI re-run required) is a sound default.",
+   "quote": "Three participants indicated errors in the chapters, but it did not affect their recall when they looked at the chapter headings and skimmed the chapter contents.",
+   "importance": "supporting",
+   "source": "https://www.researchgate.net/publication/372785084_Summaries_Highlights_and_Action_items_Design_implementation_and_evaluation_of_an_LLM-powered_meeting_recap_system\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Sunsama's official guidance is to deliberately under-commit the daily plan: new users should cap their planned day at roughly five to six hours of estimated work and defer the rest, on the theory that a today view only works if the daily commitment is realistically completable.",
+   "quote": "you should start by committing to only five or six hours of work in your first few days. ... The secret to getting a lot done each day is by planning to do less.",
+   "importance": "central",
+   "source": "https://www.sunsama.com/blog/the-official-daily-planning-guide\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Sunsama's daily planning ritual requires adding a per-task time estimate, used as a deterministic workload-feasibility check before the day starts rather than as an AI judgment.",
+   "quote": "Review each task and add a time estimate to it. Adding a time estimate is a simple and effective way to see if your workload is reasonable.",
+   "importance": "central",
+   "source": "https://www.sunsama.com/blog/the-official-daily-planning-guide\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Sunsama's triage surface offers exactly three explicit dispositions for tasks that don't fit today: defer to tomorrow, delete as unimportant, or snooze to a chosen future date \u2014 deferral is a first-class planning action, not a failure state.",
+   "quote": "defer tasks that can't be done by dragging them over to tomorrow's column, deleting the task if it's not important, or deferring it to a date of your choosing with the snooze menu.",
+   "importance": "central",
+   "source": "https://www.sunsama.com/blog/the-official-daily-planning-guide\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Sunsama claims the habit-formation mechanism that keeps the daily ritual alive is consistently finishing what was planned, implying overstuffed today views are what cause abandonment.",
+   "quote": "It's more impressive to finish what you set out to do than to naively set goals that you fail to reach.",
+   "importance": "supporting",
+   "source": "https://www.sunsama.com/blog/the-official-daily-planning-guide\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Sunsama instructs users to pull calendar meetings into the daily plan first because they consume real capacity, meaning a today view that ranks tasks while ignoring meeting load misstates available time.",
+   "quote": "Meetings are real work and they occupy real time in your day.",
+   "importance": "supporting",
+   "source": "https://www.sunsama.com/blog/the-official-daily-planning-guide\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "A Journal of Consumer Research study found a 'mere-urgency effect': people preferentially work on time-sensitive tasks over less urgent ones even when the less urgent task has a higher payoff. Implication for the plan: a cockpit ranked purely on deadline urgency (overdue-or-untouched) replicates a documented cognitive bias; the deterministic ranking should include an importance/priority axis alongside urgency, which challenges any urgency-only simplification of the ranking formula (though the staleness signal itself is fine as one input).",
+   "quote": "A recent study in the Journal of Consumer Research set out to examine how people decide what to work on when faced with tasks of mixed urgency and importance. ... our attention is drawn to time-sensitive tasks over tasks that are less urgent, even when the less urgent task offers greater rewards.",
+   "importance": "central",
+   "source": "https://www.todoist.com/productivity-methods/eisenhower-matrix\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "The same research found the bias is reversible by framing: participants prompted to consider the consequences of their choice at selection time were significantly more likely to pick the important task over the urgent one. Implication: this directly supports the plan's once-daily cached AI focus narrative layered on the deterministic ranked list, provided the narrative is written as consequence framing ('why this matters / what happens if it slips') rather than restating the ranking.",
+   "quote": "when participants were prompted to consider the consequences of their choices at the time of selection, they were significantly more likely to choose the important task over the urgent one.",
+   "importance": "central",
+   "source": "https://www.todoist.com/productivity-methods/eisenhower-matrix\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Self-described busy people were more likely to select urgent low-payout tasks because they fixate on task duration, meaning the urgency bias is strongest for exactly the meeting-heavy user profile this app targets. Implication: confirms the focus narrative and importance-weighting are worth keeping for a solo busy user, not a nice-to-have.",
+   "quote": "The same researchers found that self-described busy people were more likely to select urgent tasks with lower payouts because they were already fixated on task duration.",
+   "importance": "supporting",
+   "source": "https://www.todoist.com/productivity-methods/eisenhower-matrix\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Todoist's recommended operationalization of urgency/importance is a fully deterministic mapping of the Eisenhower 2x2 onto its four fixed priority levels (P1-P4), not a computed score. Implication: confirms the plan's deterministic ranked cockpit approach; a simple priority enum crossed with due-date urgency is the established practitioner pattern in task managers, and no continuous scoring formula is needed.",
+   "quote": "Each priority level will map onto a corresponding quadrant of the Eisenhower matrix: Urgent & Important = Priority 1 (Red), Not Urgent & Important = Priority 2 (Orange), Urgent & Not Important = Priority 3 (Blue), Not Urgent & Not Important = Priority 4 (No color)",
+   "importance": "supporting",
+   "source": "https://www.todoist.com/productivity-methods/eisenhower-matrix\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "The article prescribes a retrospective weekly review in which completed tasks are sorted into quadrants by asking two fixed questions ('Was this urgent for me?' / 'Was this important to me?'). Implication: adds a candidate lightweight pattern the plan lacks: a periodic (weekly) reflective review distinct from daily triage; if added, it should be a deterministic surface over existing data (completed/dismissed items by meeting), not another AI call.",
+   "quote": "When you have a few days worth of data, sit down and organize your tasks into quadrants by asking the following questions: 1. Was this urgent for me? 2. Was this important to me?",
+   "importance": "supporting",
+   "source": "https://www.todoist.com/productivity-methods/eisenhower-matrix\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "The MemGPT paper itself characterizes recursive summarization of past conversations as 'lossy', and its experiments show fixed-context baselines relying on such summaries score 32.1-38.7% on the deep memory retrieval (DMR) task versus 66.9-93.4% for MemGPT's tiered memory (e.g. GPT-4 baseline 32.1% vs MemGPT 92.5%). Implies for plan: CONFIRMS the decision to treat per-source records as the source of truth and rebuild the derived ledger wholesale from truth, rather than letting a rolling summary be the durable memory; a rolling summary alone measurably drops recallable facts.",
+   "quote": "The baselines are able to see a lossy summarization of the past five conversations to mimic an extended recursive summarization procedure",
+   "importance": "central",
+   "source": "https://arxiv.org/pdf/2310.08560\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "MemGPT's queue manager proactively warns the LLM before context eviction so important information can be persisted first: when prompt tokens exceed a 'warning token count', a system message tells the LLM to move key facts out of the soon-to-be-evicted window into editable storage. Implies for plan: ADDS a transferable pattern \u2014 in a token-capped, no-background-jobs artifact, the analogue is to extract durable structured facts (todos, decisions, owners) into the ledger at ingest time, before content only survives as compressed summary; never rely on re-deriving them later from a rolling summary.",
+   "quote": "When the prompt tokens exceed the 'warning token count'...the queue manager inserts a system message into the queue warning the LLM of an impending queue eviction (a 'memory pressure' warning) to allow the LLM to use MemGPT functions to store important information",
+   "importance": "central",
+   "source": "https://arxiv.org/pdf/2310.08560\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "MemGPT handles context overflow by evicting roughly half the message queue and folding it into an incrementally updated recursive summary kept in main context \u2014 i.e. even a sophisticated memory OS uses a rolling summary, but only as a lossy compression layer backed by full evicted messages in recall storage that remain retrievable. Implies for plan: CONFIRMS keeping full note text as retrievable truth records under the summary, and CHALLENGES any design where the rolling per-meeting summary is updated in place without the original notes remaining queryable.",
+   "quote": "When the prompt tokens exceed the 'flush token count' (e.g. 100% of the context window), the queue manager flushes the queue to free up space in the context window: the queue manager evicts a specific count of messages (e.g. 50% of the context window), generates a new recursive summary using the existing recursive summary and evicted messages.",
+   "importance": "central",
+   "source": "https://arxiv.org/pdf/2310.08560\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "MemGPT maintains a small fixed-size structured memory block ('working context') for key durable facts, kept separate from the prose conversation summary, and writable only through explicit function calls. Implies for plan: CONFIRMS the compact app:ledger index design \u2014 a bounded, structured, explicitly-written store of key facts (open items, owners, dates) that fits in every prompt is exactly the pattern that made MemGPT outperform summary-only baselines, and its fixed size maps well to the 1000-output-token cap.",
+   "quote": "Working context is a fixed-size read/write block of unstructured text, writeable only via MemGPT function calls.",
+   "importance": "supporting",
+   "source": "https://arxiv.org/pdf/2310.08560\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "MemGPT's gains depend on autonomous, self-directed memory management \u2014 the LLM decides when to search and edit memory in an agentic loop, and for long documents it iteratively pages through retrieved results across multiple calls. Implies for plan: CHALLENGES naive transfer \u2014 the artifact has no agentic loop (AI runs only on app-open or user action) and a hard output cap, so multi-step paging is unavailable; however, MemGPT's paginated retrieval validates the plan's fixed item-cap per extraction pass plus an explicit user-triggered additive re-run as the client-only substitute for iterative paging over long pasted notes.",
+   "quote": "Memory edits and retrieval are entirely self-directed: MemGPT autonomously updates and searches through its own memory based on the current context.",
+   "importance": "supporting",
+   "source": "https://arxiv.org/pdf/2310.08560\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Deterministic Quoting guarantees verbatim quotes by having the LLM emit only a reference identifier for the quote, while the actual quoted text is retrieved via a traditional database lookup that bypasses the LLM entirely. This means an artifact app that wants trustworthy source snippets should have the model return offsets/IDs into the saved note rather than trusting model-emitted snippet text.",
+   "quote": "The AI chooses which section of source material to quote, but the retrieval of that text is a traditional non-AI database lookup.",
+   "importance": "central",
+   "source": "https://mattyyeung.github.io/deterministic-quoting\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "In the author's implementation, the deterministic-lookup mechanism achieved zero hallucinated text within quoted sections (100% verbatim), and in a preliminary internal evaluation (N=60) hallucinations outside quoted sections dropped from a 12% baseline to 2%.",
+   "quote": "In practice, we meet the stated goal of 'zero false positives' for any quoted text. That is, 100% of all text displayed in the special quote box (the blue background in the examples) is indeed verbatim, not hallucinated.",
+   "importance": "central",
+   "source": "https://mattyyeung.github.io/deterministic-quoting\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Verbatim anchoring does not eliminate extraction errors: the model can still select an irrelevant or wrong passage to quote, and all non-quoted surrounding text remains subject to hallucination. So quote-grounded extraction reduces but does not replace the need for human-in-the-loop verification of extracted action items.",
+   "quote": "The approach is imperfect: the surrounding text (white background) has come directly from an LLM and therefore may still be hallucinated. Or, the AI can choose an irrelevant (but still verbatim) quote to display.",
+   "importance": "central",
+   "source": "https://mattyyeung.github.io/deterministic-quoting\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "A minimal implementation pattern is to discard the model-emitted quote text entirely and keep only the unique reference string, which the application resolves against a chunk index; this is directly transferable to a client-only app where the pasted note is the chunk store.",
+   "quote": "In the minimal implementation of DQ, only the unique reference string is kept. The actual quote text is discarded because it may contain hallucinations. The application looks up the unique reference string in the chunk index.",
+   "importance": "supporting",
+   "source": "https://mattyyeung.github.io/deterministic-quoting\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Visually distinguishing guaranteed-verbatim quotes from LLM-generated prose lets users verify claims without extra effort, supporting trust-building in AI review/verification UIs (relevant to a verification screen showing source snippets next to extracted todos).",
+   "quote": "Users benefit from the framing and commentary but can easily verify the underlying assumptions without extra action.",
+   "importance": "supporting",
+   "source": "https://mattyyeung.github.io/deterministic-quoting\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Granola deliberately avoided building complex chunking and reconciliation pipelines for long meeting transcripts, betting that next-generation models with longer context windows would make that engineering obsolete; this challenges investing heavily in elaborate segmentation strategies for variable-length inputs.",
+   "quote": "Building complex chunking and reconciliation features would have been a waste of effort since newer models would handle longer meetings natively",
+   "importance": "central",
+   "source": "https://creatoreconomy.so/p/the-hidden-rules-behind-successful-ai-products-chris-pedregal\\n**Title:**",
+   "title": null,
+   "sourceQuality": "secondary"
+  },
+  {
+   "claim": "Granola's core trust mechanism is anchoring AI output on the user's own typed notes rather than generating from the transcript alone: the product is a text editor first, and the AI enhances what the human already wrote, keeping the human's input as the verbatim anchor.",
+   "quote": "We're a text editor first \u2013 you can take your notes, and when the meeting ends, we flesh them out while anchoring on what you've written",
+   "importance": "central",
+   "source": "https://creatoreconomy.so/p/the-hidden-rules-behind-successful-ai-products-chris-pedregal\\n**Title:**",
+   "title": null,
+   "sourceQuality": "secondary"
+  },
+  {
+   "claim": "Granola improves extraction/summarization quality primarily by injecting rich situational context into prompts (who the attendees are, their companies and roles, what decision they need to make) rather than by adding more instructions, using an 'intern on their first day' mental model for the LLM.",
+   "quote": "Much of our work focuses on giving this 'intern' the right context to do a great job",
+   "importance": "supporting",
+   "source": "https://creatoreconomy.so/p/the-hidden-rules-behind-successful-ai-products-chris-pedregal\\n**Title:**",
+   "title": null,
+   "sourceQuality": "secondary"
+  },
+  {
+   "claim": "Granola found that automated evaluation of meeting-notes quality is unreliable and relies on a manual human evaluation process, because judging notes requires stack-ranking which information matters most, which is highly nuanced.",
+   "quote": "Evaluating meeting notes requires tremendous nuance because it involves stack-ranking information",
+   "importance": "supporting",
+   "source": "https://creatoreconomy.so/p/the-hidden-rules-behind-successful-ai-products-chris-pedregal\\n**Title:**",
+   "title": null,
+   "sourceQuality": "secondary"
+  },
+  {
+   "claim": "Granola's product philosophy is human-in-the-loop augmentation rather than full automation: AI drafts and assists (e.g., follow-up emails) while the human makes strategic decisions, which supports verification flows where users review and edit AI output rather than auto-accepting it.",
+   "quote": "We believe in giving people superpowers rather than fully automating everything",
+   "importance": "supporting",
+   "source": "https://creatoreconomy.so/p/the-hidden-rules-behind-successful-ai-products-chris-pedregal\\n**Title:**",
+   "title": null,
+   "sourceQuality": "secondary"
+  },
+  {
+   "claim": "Storing a verbatim grounding quote with each extracted artifact (decision, todo, key fact) enables exact retrieval and prevents the system from hallucinating reconstructed content; this directly supports the plan's quote-grounded extraction with source snippets per todo/decision.",
+   "quote": "each object maintains its grounding quote q, enabling verbatim retrieval and preventing hallucinated reconstructions",
+   "importance": "central",
+   "source": "https://arxiv.org/html/2601.00821v2\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Lossy summarization drops critical qualifiers and constraints from conversational content: on their benchmark, summarization achieved only 19.0% exact match versus 93.0% for verbatim-grounded extraction, e.g. recalling 'use type hints' but dropping the constraint 'everywhere'. This challenges heavy reliance on a rolling summary as a source of truth and confirms the plan's per-source truth records over derived summaries.",
+   "quote": "conversation summarization loses nuanced details: when asked about coding preferences after 40 turns, summarization recalls 'use type hints' but drops the critical constraint 'everywhere' (19.0% exact match vs. 93.0% for our approach)",
+   "importance": "central",
+   "source": "https://arxiv.org/html/2601.00821v2\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "A second extraction pass that re-reviews the input specifically for pronoun-referenced entities, omitted subjects, implicit causal links, and temporal expressions catches items missed by a single pass; this supports the plan's hybrid verification design of one additive conversational re-run after initial extraction.",
+   "quote": "the second pass reviews initial extraction results and specifically targets: (1) entities referred to by pronouns, (2) omitted subjects, (3) implicit causal relationships, and (4) temporal expressions",
+   "importance": "supporting",
+   "source": "https://arxiv.org/html/2601.00821v2\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Verbatim-grounded extraction achieved 97.5% recall versus 19.0% for summarization on the paper's standard benchmark, indicating structured artifact extraction substantially outperforms summary-based memory at not missing items (missed action items being a documented extraction failure mode).",
+   "quote": "CogCanvas recall: 97.5% vs. Summarization 19.0%",
+   "importance": "supporting",
+   "source": "https://arxiv.org/html/2601.00821v2\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "A compact index of extracted typed objects is token-cheap at read time (~1,250 tokens per query versus ~10,000 for full context), supporting the plan's compact rebuilt ledger index as the AI-facing read surface under a tight token budget.",
+   "quote": "CogCanvas: ~1,250 tokens per query ... Full context: ~10,000 tokens",
+   "importance": "supporting",
+   "source": "https://arxiv.org/html/2601.00821v2\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "LLMs can detect errors in machine-generated meeting summaries with roughly 89% average accuracy, but detection is weakest precisely for hallucination (~72%) and irrelevance (~81%), meaning AI self-verification is least reliable on the highest-stakes failure mode. For the plan: this challenges any temptation to add an AI-only verification step and confirms the hybrid verification decision (human inline edits as the trust backstop, AI only for an additive re-run) - the model cannot be trusted to catch its own hallucinated action items.",
+   "quote": "GPT4 identifies errors on average with \u223c89% accuracy, but it struggles with irrelevance (\u223c81%) and hallucination (\u223c72%) errors.",
+   "importance": "central",
+   "source": "https://arxiv.org/pdf/2407.11919\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Wrong-owner attribution is a formally documented failure mode of LLM meeting summarization: the paper's nine-error taxonomy includes a dedicated 'Coreference' category for misattributing statements to the wrong participant or entity. For the plan: confirms that the verification screen must make the extracted owner field explicitly reviewable/editable per item, not just the action text and due date.",
+   "quote": "Coreference (COR): The model fails to resolve a reference to a participant or entity, misattributes statements, or omits necessary mentions.",
+   "importance": "central",
+   "source": "https://arxiv.org/pdf/2407.11919\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Omission of significant decisions and actions (both total omission of key points and partial omission of detail) is a documented, human-annotated error class in LLM meeting summaries - i.e., missed action items are an expected failure, not an edge case. For the plan: this challenges a fixed item-cap per extraction pass as the sole control, since caps amplify omission risk on long notes; it supports pairing the cap with the additive conversational re-run so users can recover items the first pass dropped.",
+   "quote": "Omission (partial, total) (P-OM, T-OM): Missing information from the meeting, such as significant decisions or actions. Total omission: Relevant topics and key points are not stated. Partial omission: Salient topics are mentioned but not captured in detail.",
+   "importance": "central",
+   "source": "https://arxiv.org/pdf/2407.11919\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Hallucination in meeting summaries splits into two distinct subtypes - intrinsic (misrepresenting what the transcript says) and extrinsic (inventing content not in the transcript at all). For the plan: supports quote-grounded extraction (source snippets per item), since requiring a verbatim source anchor gives the user a direct check against both subtypes during review.",
+   "quote": "Hallucination (HAL): The model produces inconsistencies not aligned with the meeting content. Intrinsic: Misrepresents information from the transcript. Extrinsic: Introduces content not present in the transcript.",
+   "importance": "central",
+   "source": "https://arxiv.org/pdf/2407.11919\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "A two-phase protocol that first identifies mistakes, converts them into actionable feedback, then regenerates the summary produced refined summaries comparable in quality to error-free gold summaries (e.g., human-rated relevance rose from 2.28 to ~3.1 and coherence from 2.41 to ~3.5-3.7). For the plan: supports the single additive conversational re-run as a meaningful quality lever rather than a gimmick - one structured feedback-driven second pass measurably closes most of the gap to gold-standard output, so more than one re-run is likely unnecessary.",
+   "quote": "These refined summaries are comparable in quality, with error-free gold summaries.",
+   "importance": "supporting",
+   "source": "https://arxiv.org/pdf/2407.11919\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Interruptive alerts in clinical decision support systems have practitioner acceptance rates of only 4-11%, meaning roughly 9 of 10 interruptive prompts are overridden or dismissed.",
+   "quote": "Additionally, interruptive alerts have low rates of practitioner acceptance (4\u201311%).",
+   "importance": "central",
+   "source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9132737/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Repeatedly showing an alert in a stable context with no immediate negative consequence for overriding it positively reinforces habitual override behavior, i.e., repeated identical nudges actively train users to ignore them.",
+   "quote": "An alert is routinely shown in a stable context and frequently overridden. Because in most cases there is no immediate negative consequence, the override behavior is positively reinforced.",
+   "importance": "central",
+   "source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9132737/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Low-quality alerts have a spillover effect: the presence of poor alerts degrades user trust in and effectiveness of the entire decision-support system, not just the bad alert itself (demonstrated when tightening criteria for one alert improved acceptance of unrelated alerts).",
+   "quote": "Thus, the presence of poor alerts in the system can reduce the effectiveness of all CDS.",
+   "importance": "central",
+   "source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9132737/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "The main causes of low alert acceptance are poor targeting of recipients, incorrect information, unactionable guidance, and misalignment with workflow, and these directly contribute to alert distrust and alert fatigue.",
+   "quote": "Low acceptance rates may result from poor targeting of recipients, incorrect information, un-actionable guidance, or misaligned workflow and contribute to alert distrust and alert fatigue.",
+   "importance": "supporting",
+   "source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9132737/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Unmanaged alerting systems can reach extreme volumes (one adult ICU generated 187 audible alerts per bed per day, many erroneous or unactionable), motivating explicit volume monitoring metrics such as alerts per clinician per day.",
+   "quote": "Physiologic alarms in one adult intensive care unit generated 187 audible alerts/bed/day, many of which were erroneous or unactionable.",
+   "importance": "tangential",
+   "source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9132737/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "At realistic scale (112 studies, 24 variables each), LLM data extraction agreed with human coding only 62-72% of the time (exact match), far below the >90% accuracy reported in small-sample studies \u2014 supporting the plan's mandatory verification step rather than auto-accepting extractions.",
+   "quote": "Overall we found that Gemini 1.5 Flash, Gemini 1.5 Pro, and Mistral Large 2 performed reasonably well, with 71.17%, 72.14%, and 62.43% of data extracted being consistent with human coding, respectively. While promising, these results highlight the dire need for a human-in-the-loop (HIL) process for AI-assisted data extraction.",
+   "importance": "central",
+   "source": "https://arxiv.org/pdf/2501.11840\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Extraction of explicitly stated data was substantially more accurate than extraction of derived/categorized data (Gemini 1.5 Pro: 83.33% vs 65.42% exact-match agreement) \u2014 implying that verbatim-anchored fields (action item text, source snippets) are more trustworthy than inferred fields (priority, inferred due dates, owner attribution), which deserve the most review attention in the verification UX.",
+   "quote": "the LLMs tested here were quite accurate when extracting explicitly stated data and variables from studies. However, they were substantially less effective at categorizing data based on predefined categories. ... For Exact Match, Google Gemini 1.5 Pro was again the most accurate, with 65.42% agreement",
+   "importance": "central",
+   "source": "https://arxiv.org/pdf/2501.11840\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "The authors' working HITL tool (AIDE) implements exactly the pattern the plan proposes: each extracted data point shows its source location (auto-scrolling the PDF to the supporting page), and the user either accepts it as-is or edits the text inline before recording \u2014 accept-or-edit per item, with source grounding, no AI re-run required.",
+   "quote": "If the Source button is pressed, the LLM's reasoning for the answer is shown when available (see Figure 3) and the PDF reader scrolls to the appropriate page of the PDF automatically. If the answer is correct, pressing the Record button records it to the appropriate location on the coding form... If the answer needs to be modified, the user can edit the text before clicking Record.",
+   "importance": "central",
+   "source": "https://arxiv.org/pdf/2501.11840\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Structured-output reliability failed silently at scale: one model (Mistral Large 2) returned no results at all for 9 of 112 inputs, incomplete results for 3 more, and inconsistent formatting requiring manual cleaning \u2014 confirming that missing items and malformed responses (not just wrong values) are documented failure modes, which supports defensive JSON parsing and treating 'items the model silently dropped' as an expected case.",
+   "quote": "Mistral only returned results for 103 of the studies, and of those, 3 were incomplete, and one had somewhat irrelevant results. ... the response from the Mistral API was not as consistent as the Gemini 1.5 models (as shown in the raw data forms on OSF). We had to manually clean the data before analysis.",
+   "importance": "supporting",
+   "source": "https://arxiv.org/pdf/2501.11840\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "The authors explicitly argue that even >90% measured extraction accuracy would not justify removing human oversight, because accuracy with one prompt/context does not transfer to other contexts \u2014 challenging any future temptation to add an 'auto-accept high-confidence items' shortcut to the verification flow.",
+   "quote": "Even if we had found over 90% accuracy, we would still not advise researchers to adopt LLM outputs without human oversight. For example, just because some data was extracted accurately with one specific prompt does not mean that accuracy will translate to different contexts.",
+   "importance": "supporting",
+   "source": "https://arxiv.org/pdf/2501.11840\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "In a 20-month cohort study of 66,049 clinical decision-support alerts, physicians dismissed 91.2% of alerts, and most dismissals were near-instant (72.5% under 3 seconds, 56.9% under 2 seconds), indicating reflexive rather than deliberative processing of repeated alerts.",
+   "quote": "We observed that physicians, on average, dismissed 91.2% (60,236/66,049) of all IDC alerts they encountered.",
+   "importance": "central",
+   "source": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8892274/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Dismissing alerts is self-reinforcing: each prior dismissal increases habit strength to dismiss future alerts, and once the habit forms it is hard to disrupt \u2014 implying that a resurfacing/nudge system with an easy dismiss action can actively train the user to ignore it.",
+   "quote": "We found that habitual dismissal of alerts is self-reinforcing, which suggests significant challenges in disrupting or changing alert dismissal habits once they are formed.",
+   "importance": "central",
+   "source": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8892274/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Habituation to alerts is measurable and rapid: average time spent processing an alert fell from 5.90 seconds on first exposure to 2.43 seconds by the 60th exposure, showing attention to identical repeated prompts decays with exposure count.",
+   "quote": "The average time for a physician to process an alert dropped from 5.90 seconds (95% CI 5.46-6.34) in the first alert exposure to 2.43 seconds (95% CI 1.75-3.10) during the 60th exposure.",
+   "importance": "supporting",
+   "source": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8892274/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "The authors' design recommendation for breaking dismissal habits is to vary the format and form of alerts according to risk level or condition type (i.e., disrupt the stable context that enables automatic dismissal), rather than simply repeating or escalating the same alert.",
+   "quote": "Designers of clinical support alerts could consider varying the format and form of the alerts based on the risk levels or types of clinical conditions involved.",
+   "importance": "supporting",
+   "source": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8892274/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Habitual alert dismissal occurred across all experience levels, from interns to senior attending specialists, so user expertise or familiarity with the domain does not protect against habituated dismissal of repeated prompts.",
+   "quote": "Alert dismissal due to habitual learning was also found to be pervasive across all physician ranks, from junior interns to senior attending specialists.",
+   "importance": "tangential",
+   "source": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8892274/\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Elevating the log of changes (rather than mutable latest-state) to the core data abstraction lets you derive multiple read models each optimized for its usage, and this pattern subsumes replication, secondary indexing, caching, and materialized views. This confirms the plan's pattern of per-source truth records with a derived app:ledger index: the ledger is a materialized view/projection, not co-equal state.",
+   "quote": "If you \u201cunbundle\u201d the transaction log, instead of being bound to a single data model to read data from, you could create read models optimized for usage. Kleppman covers multiple examples, replication, secondary indexing, caching, and materialized view to show how this approach excels at addressing these concerns.",
+   "importance": "central",
+   "source": "https://www.kurrent.io/blog/turning-the-database-inside-out\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Derived read models are disposable and can be recreated at any time by replaying the source-of-truth streams, which is how the pattern handles changing requirements. This directly confirms the plan's wholesale-rebuild-on-accept decision (never read-modify-merge the ledger) and gives a migration story: when the ledger schema changes in v2, rebuild it from per-source records instead of migrating the index.",
+   "quote": "When business requirements change new read models can be created, or existing ones recreated by replaying the streams.",
+   "importance": "central",
+   "source": "https://www.kurrent.io/blog/turning-the-database-inside-out\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Keeping derived views incrementally synchronized with the source of truth requires checkpoint machinery (a monotonically increasing position tracked per view) to resynchronize reliably after a failure. By implication this challenges any temptation to incrementally patch the ledger in the artifact: window.storage has no checkpoints or subscriptions, so wholesale rebuild from truth records on each accept is the only reliable consistency mechanism available; partial/incremental updates would risk silent divergence.",
+   "quote": "The event stream is tracked by a monotonically increasing number (a checkpoint in EventStoreDB) that is instrumental in synchronizing persisted read models. A view can subscribe and be updated real time with an event stream and in the case one side goes down it can reliably resynchronize using the location it was at in the latest successful synchronization.",
+   "importance": "central",
+   "source": "https://www.kurrent.io/blog/turning-the-database-inside-out\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Validating a state change requires hydrating the entity's current state first, which requires granular per-entity streams rather than one global log or blob. This supports the plan's per-source record granularity (meeting:{id}-style keys) over a single monolithic state object, and it also matters for last-write-wins: smaller per-entity write units shrink the clobber surface relative to one big key.",
+   "quote": "In order to determine whether a state change is valid an entity\u2019s current state must be \u201chydrated\u201d before checking the business rules for the requested change (there are optimizations but the fundamentals do not change). This requires a stream for each entity and millions or billions of streams is not uncommon.",
+   "importance": "supporting",
+   "source": "https://www.kurrent.io/blog/turning-the-database-inside-out\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Modeling changes as first-class, named business events with business context makes the change history easier to reason about and debug than bolted-on change capture. This adds a nudge to the plan's dismissal-tombstone design: recording dismissals as explicit, named facts (tombstones keyed by normalized text + source ref) follows this principle, versus inferring dismissal from absence in the derived index.",
+   "quote": "The changes are first class, they are modeled, and the change is wrapped with its business context. This is different from using bolted on change data capture approaches for supporting change streams. Event Streams are much easier to reason about and debug because they represent named events.",
+   "importance": "supporting",
+   "source": "https://www.kurrent.io/blog/turning-the-database-inside-out\\n**Title:**",
+   "title": null,
+   "sourceQuality": "blog"
+  },
+  {
+   "claim": "Attention to security warnings measurably declines with repeated exposure over as little as a five-day workweek, as shown directly via simultaneous fMRI and eye-tracking. For the plan: this confirms the alert-fatigue risk for any recurring resurfacing nudge (e.g., repeatedly showing the same overdue/stale items in the cockpit) and supports keeping resurfacing low-frequency rather than constant.",
+   "quote": "First, we performed an experiment collecting fMRI and eye-tracking data simultaneously to directly measure habituation to security warnings as it develops in the brain over a five-day workweek. Our results show not only a general decline of participants' attention to warnings over time...",
+   "importance": "central",
+   "source": "https://misq.umn.edu/misq/article/42/2/355/1716/Tuning-Out-Security-Warnings-A-Longitudinal\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Attention to warnings recovers at least partially between workdays without exposure, implying that spacing or pausing repeated alerts restores some of their effectiveness. For the plan: this supports the once-daily cached AI focus narrative (one digest per day, not per-action nags) and suggests snoozed/dismissed items should re-appear after a gap rather than persisting continuously.",
+   "quote": "...but also that attention recovers at least partially between workdays without exposure to the warnings.",
+   "importance": "supporting",
+   "source": "https://misq.umn.edu/misq/article/42/2/355/1716/Tuning-Out-Security-Warnings-A-Longitudinal\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Updating the visual appearance of a warning (a 'polymorphic' design) substantially reduced habituation of attention in the lab study. For the plan: escalation for stale/overdue items should change presentation (wording, placement, visual treatment) as items age, rather than repeating an identical banner, to avoid training the user to ignore it.",
+   "quote": "Further, we found that updating the appearance of a warning\u2014 that is, a polymorphic design\u2014substantially reduced habituation of attention.",
+   "importance": "central",
+   "source": "https://misq.umn.edu/misq/article/42/2/355/1716/Tuning-Out-Security-Warnings-A-Longitudinal\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "In a three-week field experiment with real mobile-app permission warnings, adherence to standard (static) warnings substantially decreased over three weeks, while users shown polymorphic warnings declined at a substantially lower rate and remained high at three weeks. For the plan: behavioral (not just attentional) follow-through degrades within weeks for unchanging nudges, so the staleness/escalation surface needs variation to stay effective over the multi-week horizons the follow-through engine targets.",
+   "quote": "Consistent with our fMRI results, users' warning adherence substantially decreased over the three weeks. However, for users who received polymorphic permission warnings, adherence dropped at a substantially lower rate and remained high after three weeks, compared to users who received standard warnings.",
+   "importance": "central",
+   "source": "https://misq.umn.edu/misq/article/42/2/355/1716/Tuning-Out-Security-Warnings-A-Longitudinal\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Users frequently fail to return to emails they explicitly marked for later handling: using the strongest explicit deferral markers (mark-as-unread, flagging) to predict actual deferral yields surprisingly low precision, indicating self-applied markers are unreliable as a follow-through mechanism. Implication for the plan: confirms the need for system-driven resurfacing (the overdue-or-untouched-N-days staleness rule) rather than relying on user-applied flags or snoozes alone; snoozed/deferred items must be actively resurfaced by the app, not merely marked.",
+   "quote": "Experiment 1 in Table 5 shows that using the strongest deferral signals available to predict deferral results in surprisingly low precision and F1, suggesting that users often do not go back to messages they explicitly mark.",
+   "importance": "central",
+   "source": "https://arxiv.org/pdf/1901.04375\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Deferral during triage is a common, daily behavior at scale: 12% of email triage sessions and 16% of daily active enterprise users had at least one deferred email on weekdays (3% of all messages deferred). Implication for the plan: any daily triage surface (the cockpit) will see routine put-it-off behavior, so snooze/defer mechanics with guaranteed resurfacing are core functionality, not an edge case.",
+   "quote": "our quantitative log analysis confirms that 12% of triage sessions and 16% of daily active users had at least one deferred email on weekdays",
+   "importance": "supporting",
+   "source": "https://arxiv.org/pdf/1901.04375\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Items requiring effortful action (replying, careful reading, following links/attachments) are the ones most likely to be deferred. Implication for the plan: high-effort extracted action items are precisely the ones most at risk of being skipped in the cockpit, so staleness resurfacing matters most for substantive todos, and surfacing effort/context with an item may reduce deferral.",
+   "quote": "We found that users are more likely to defer emails when handling them involves replying, reading carefully, or clicking on links and attachments.",
+   "importance": "supporting",
+   "source": "https://arxiv.org/pdf/1901.04375\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Higher workload (more unhandled items in a session) increases the probability that any given item gets deferred. Implication for the plan: an overloaded cockpit list directly causes more skipping, supporting the fixed item-cap per extraction pass and a small deterministic ranked today-view over an exhaustive list.",
+   "quote": "The trends are consistent with our qualitative findings and confirm that users are more likely to defer a message when dealing with higher workload.",
+   "importance": "supporting",
+   "source": "https://arxiv.org/pdf/1901.04375\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  },
+  {
+   "claim": "Even a feature-rich ML classifier predicts deferral only modestly (doubling precision over a 0.14-precision baseline and improving F1 by ~50%, to roughly 0.25 precision / 0.36 F1). Implication for the plan: predicting what a user will defer or needs nudging on is hard even with rich behavioral logs; this supports the plan's choice of simple deterministic staleness rules and explicit user snooze actions over AI-inferred follow-up prediction, especially in a client-only token-capped setting with no behavioral telemetry.",
+   "quote": "Our model is able to double precision and increase F1 by over 50% compared to the baseline, showing that many additional signals are necessary to significantly improve prediction.",
+   "importance": "supporting",
+   "source": "https://arxiv.org/pdf/1901.04375\\n**Title:**",
+   "title": null,
+   "sourceQuality": "primary"
+  }
+ ],
+ "verifies": [
+  {
+   "refuted": false,
+   "evidence": "Verified against the primary source. arXiv 2407.11919 is \"What's Wrong? Refining Meeting Summaries with LLM Feedback\" (submitted July 2024, accepted to COLING 2025), which introduces the QMSum Mistake dataset: 200 model-generated meeting summaries human-annotated on exactly nine error types (Redundancy, Incoherence, Language, Omission-Partial, Omission-Total, Coreference, Hallucination, Structure, Irrelevance). The supporting quote matches the paper's Table 2 definition verbatim: \"Coreference (COR): The model fails to resolve a reference to a participant or entity, misattributes statements, or omits necessary mentions.\" COR is not merely theoretical: COR errors were actually present in the annotated summaries (the paper reports detection accuracy on erroneous COR samples, e.g. 91.5% for multi-instance CoT), and the annotated outputs include LLM-generated summaries (GPT-3.5, Phi-3 mini) alongside encoder-decoder baselines. Source quality matches claim strength (peer-reviewed primary academic source for a modest \"formally documented failure mode\" claim); no contradicting evidence found, and adjacent literature (e.g. arXiv 2404.11124 on meeting summarization metrics) corroborates coreference/attribution as a recognized meeting-summary error class. Two minor caveats that do not rise to refutation: (1) COR is broader than misattribution alone (it also covers unresolved references and omitted mentions), but the claim does not assert exclusivity and misattribution is explicitly named in the definition; (2) the taxonomy concerns meeting summarization, not action-item extraction per se, so the plan implication (per-item editable owner field) is a reasonable inference rather than a directly tested finding, and the annotated models (GPT-3.5-era) may misattribute at different rates than current frontier models.",
+   "confidence": "high",
+   "counterSource": "https://arxiv.org/html/2407.11919 (full text confirms the quote verbatim; no contradicting source found)"
+  },
+  {
+   "refuted": false,
+   "evidence": "Quote verified verbatim against the full text of arXiv 2407.11919 (Kirstein, Ruas, Gipp, \"What's Wrong? Refining Meeting Summaries with LLM Feedback\", COLING 2025): Section 3.1/Table 2 defines Hallucination (HAL) exactly as quoted, with Intrinsic = \"Misrepresents information from the transcript\" and Extrinsic = \"Introduces content not present in the transcript\", in a taxonomy built specifically for meeting summaries (QMSum Mistake, 200 human-annotated summaries, 9 error types). The split is not idiosyncratic: it is the standard taxonomy from Maynez et al. 2020 (arXiv 2005.00661) and is reused in major surveys (arXiv 2311.05232, 2203.05227) and benchmarks (FaithBench, arXiv 2410.13210). No credible source disputes the two-subtype framing; the only literature qualification is that extrinsic hallucinations can occasionally be factually true per world knowledge, which does not weaken the plan implication since such content still lacks a transcript anchor. Source is peer-reviewed, primary, recent (2024/2025), non-marketing. Caveats (non-fatal): (a) a model can fabricate the verbatim quote itself, so the plan should programmatically exact-match each source snippet against the pasted notes rather than rely solely on user eyeballing; (b) source anchors do not address omission errors (P-OM/T-OM in the same taxonomy), though the claim does not assert they do.",
+   "confidence": "high",
+   "counterSource": "https://arxiv.org/pdf/2005.00661 (Maynez et al. 2020 - notes extrinsic hallucinations can be factually correct per world knowledge, a qualification not a contradiction)"
+  },
+  {
+   "refuted": false,
+   "evidence": "Verified directly against the primary source. arXiv 2407.11919 is \"What's Wrong? Refining Meeting Summaries with LLM Feedback\" (Kirstein, Ruas, Gipp); its abstract confirms a dataset \"annotated by humans on nine error types,\" and the full text (Table 2) lists exactly nine: Redundancy, Incoherence, Language, Partial Omission, Total Omission, Coreference, Hallucination, Structure, Irrelevance. The Coreference (COR) definition matches the supporting quote verbatim: \"The model fails to resolve a reference to a participant or entity, misattributes statements, or omits necessary mentions.\" So the claim's factual core (nine-error taxonomy with a dedicated Coreference category covering misattribution of statements to participants/entities) is accurate, not an overreach. The generalization to wrong-owner attribution on action items is independently corroborated by a peer-reviewed CSCW/PACM-HCI study of a deployed LLM meeting-recap system (arXiv 2307.15793 / dl.acm.org/doi/10.1145/3711074), which documents misattribution errors including wrong name/pronoun association and false attribution of action items. No contradicting source found. Minor caveats that do not refute: the fetched text does not report COR's observed frequency, and the annotated summaries were generated by older models (LED, DialogLED, PEGASUS-X, GPT-3.5, Phi-3 mini), so prevalence under 2026 frontier models may be lower; the claim, however, asserts only that the failure mode is formally documented, and the derived plan implication (make the owner field explicitly reviewable/editable per item) is a conservative design choice that does not depend on high prevalence.",
+   "confidence": "high",
+   "counterSource": "https://arxiv.org/html/2407.11919v1 (same paper: COR frequency not reported in fetched sections; annotated summaries came from pre-2024 models, so prevalence in current models is unquantified)"
+  }
+ ]
+}

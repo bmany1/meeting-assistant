@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meeting Assistant — dev preview</title>
+    <style>
+      html, body, #root { height: 100%; margin: 0; }
+      body { background: #F2F3F4; }
+    </style>
+  </head>
+  <body>
+    <!--
+      Local-only preview shell. NEVER pasted into the claude.ai artifact.
+      It imports the default export from the shipped single file so Bryan can
+      see and click the UI. AI calls and real persistence only work inside
+      claude.ai; locally the in-memory storage shim stands in.
+    -->
+    <div id="root"></div>
+    <script type="module" src="/dev/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "name": "meeting-assistant-dev-harness",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Local-only Vite + Vitest harness for previewing and testing meeting-assistant.tsx. NEVER shipped into the claude.ai artifact.",
+  "scripts": {
+    "dev": "vite --config dev/vite.config.ts",
+    "build": "vite build --config dev/vite.config.ts",
+    "test": "vitest run --config dev/vite.config.ts",
+    "test:watch": "vitest --config dev/vite.config.ts"
+  },
+  "dependencies": {
+    "lucide-react": "^0.456.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  }
+}

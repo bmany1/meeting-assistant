@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meeting Assistant — Design Language</title>
+<style>
+  :root{
+    --indigo:#2C2A4A; --bb2:#423D6E; --bb3:#645CA0; --bb4:#9085D9; --bb5:#A8A2DE; --bb6:#C6C2E0;
+    --slate:#25262B; --slate-dark:#565860; --slate-med:#7F8186; --slate-light:#D2D4D7; --xlight:#F2F3F4;
+    --sec-text:#706C82; --click-gray:#4B4564;
+    --amber:#F2853C; --tang40:#F8CFB4; --tang20:#FBE7D8;
+    --rose:#E96B6E; --rose20:#FBE1E1; --plum:#CE5780; --plum40:#EBBBCB; --plum20:#F5DCE4;
+    --divider:#F1F2F3; --stroke:#C6C2E0; --service:#2F77E0; --error:#D32F2F; --white:#fff;
+    --sans:Aptos,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    --serif:"Aptos Serif",Georgia,"Times New Roman",serif;
+    --float:0 8px 24px rgba(40,37,37,0.12),0 2px 6px rgba(40,37,37,0.07);
+    --lift:0 1px 3px rgba(40,37,37,0.08);
+    --ease:cubic-bezier(0.25,1,0.5,1);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#E9E8EC;color:var(--slate);font:400 0.9375rem/1.55 var(--sans);
+    -webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 0}
+  .wrap{max-width:980px;margin:0 auto;padding:40px 24px 80px}
+  header.board{margin-bottom:40px}
+  .eyebrow{font:500 0.75rem/1.3 var(--sans);letter-spacing:0.08em;text-transform:uppercase;color:var(--sec-text);margin:0 0 10px}
+  h1.board{font:600 1.875rem/1.15 var(--serif);letter-spacing:-0.01em;margin:0 0 8px;color:var(--slate)}
+  .northstar{font:400 1.0625rem/1.6 var(--serif);color:var(--slate-dark);max-width:64ch;margin:0}
+  section.board{margin:44px 0 0}
+  h2.board{font:600 1.375rem/1.25 var(--sans);letter-spacing:-0.005em;margin:0 0 4px;color:var(--slate)}
+  .sub{font:400 0.9375rem/1.5 var(--sans);color:var(--sec-text);margin:0 0 20px;max-width:70ch}
+  .card{background:var(--white);border:1px solid var(--divider);border-radius:12px;padding:24px}
+  .grid{display:grid;gap:14px}
+  .swatches{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  .sw{border:1px solid var(--divider);border-radius:8px;overflow:hidden;background:var(--white)}
+  .sw .chip{height:54px}
+  .sw .meta{padding:9px 11px}
+  .sw .nm{font:600 0.8125rem/1.3 var(--sans);color:var(--slate)}
+  .sw .hx{font:400 0.75rem/1.4 var(--sans);color:var(--sec-text);font-variant-numeric:tabular-nums}
+  .sw .role{font:400 0.75rem/1.4 var(--sans);color:var(--sec-text);margin-top:2px}
+  .ramp{display:flex;border:1px solid var(--divider);border-radius:8px;overflow:hidden;margin-bottom:14px}
+  .ramp .seg{flex:1;height:46px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px;
+    font:500 0.5625rem var(--sans);font-variant-numeric:tabular-nums}
+  .grouplbl{font:500 0.75rem/1.3 var(--sans);letter-spacing:0.04em;text-transform:uppercase;color:var(--sec-text);margin:18px 0 10px}
+  .grouplbl:first-child{margin-top:0}
+  .typerow{padding:14px 0;border-bottom:1px solid var(--divider);display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;justify-content:space-between}
+  .typerow:last-child{border-bottom:0}
+  .typespec{font:400 0.75rem/1.4 var(--sans);color:var(--sec-text);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .t-display{font:600 1.875rem/1.15 var(--serif);letter-spacing:-0.01em;color:var(--slate)}
+  .t-headline{font:600 1.375rem/1.25 var(--sans);color:var(--slate)}
+  .t-title{font:600 1.0625rem/1.35 var(--sans);color:var(--slate)}
+  .t-body{font:400 0.9375rem/1.55 var(--sans);color:var(--slate)}
+  .t-reading{font:400 1.125rem/1.6 var(--sans);letter-spacing:-0.01em;color:var(--slate-dark)}
+  .t-label{font:500 0.75rem/1.3 var(--sans);letter-spacing:0.02em;color:var(--slate-dark)}
+  .t-num{font:400 1.0625rem/1.4 var(--sans);color:var(--slate);font-variant-numeric:tabular-nums}
+  .mock{background:var(--white);border:1px solid var(--divider);border-radius:12px;padding:0;overflow:hidden}
+  .mock-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--divider);background:var(--white)}
+  .dot3{display:flex;gap:6px}.dot3 i{width:9px;height:9px;border-radius:999px;background:var(--slate-light)}
+  .mock-title{font:500 0.75rem/1 var(--sans);color:var(--sec-text);margin-left:6px}
+  .mock-body{padding:22px;background:var(--xlight)}
+  .greet{font:600 1.5rem/1.15 var(--serif);letter-spacing:-0.01em;margin:0 0 2px;color:var(--slate)}
+  .greet-sub{font:400 0.9375rem/1.5 var(--sans);color:var(--sec-text);margin:0 0 20px;font-variant-numeric:tabular-nums}
+  .focus{background:var(--white);border:1px solid var(--divider);border-radius:8px;padding:14px 16px;margin:0 0 22px;position:relative}
+  .focus::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0;background:var(--amber)}
+  .focus .flbl{font:500 0.6875rem/1.3 var(--sans);letter-spacing:0.06em;text-transform:uppercase;color:var(--sec-text);margin:0 0 6px;padding-left:12px}
+  .focus p{font:400 1.0625rem/1.6 var(--sans);color:var(--slate-dark);margin:0;padding-left:12px}
+  .ckpt-group{margin:0 0 18px}
+  .ckpt-h{display:flex;align-items:baseline;gap:8px;margin:0 0 9px}
+  .ckpt-h .g{font:600 1.0625rem/1.35 var(--sans);color:var(--slate)}
+  .ckpt-h .c{font:400 0.75rem/1.3 var(--sans);color:var(--sec-text);font-variant-numeric:tabular-nums}
+  .row{display:flex;align-items:flex-start;gap:12px;background:var(--white);border:1px solid var(--divider);
+    border-radius:8px;padding:12px 14px;margin-bottom:8px;transition:box-shadow 180ms var(--ease)}
+  .row:hover{box-shadow:var(--lift)}
+  .row-mark{flex:none;width:7px;height:7px;margin-top:6px;border-radius:999px;background:var(--amber)}
+  .row-mark.q{background:transparent;border:1.5px solid var(--sec-text)}
+  .row-mark.w{background:var(--bb6)}
+  .row-body{min-width:0;flex:1}
+  .row-text{font:400 0.9375rem/1.45 var(--sans);color:var(--slate)}
+  .row-meta{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap}
+  .age{font:400 0.75rem/1.3 var(--sans);color:var(--sec-text);font-variant-numeric:tabular-nums}
+  .pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 9px;
+    font:500 0.75rem/1.4 var(--sans);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .pill svg{display:block}
+  .pill-iowe{background:var(--xlight);color:var(--slate-dark)}
+  .pill-wait{background:var(--bb6);color:var(--indigo)}
+  .pill-stale{background:var(--xlight);color:var(--sec-text)}
+  .pill-done{background:transparent;color:var(--sec-text);text-decoration:line-through;text-decoration-color:var(--slate-light)}
+  .check{color:var(--indigo)}
+  .tag{display:inline-flex;align-items:center;gap:6px;background:var(--xlight);color:var(--slate-dark);
+    font:500 0.75rem/1.4 var(--sans);padding:2px 9px;border:1px solid var(--divider);border-radius:999px;cursor:pointer}
+  .tag .d{width:6px;height:6px;border-radius:999px;background:var(--plum)}
+  .prompt{font:400 0.875rem/1.45 var(--sans);color:var(--slate-dark);margin-top:7px}
+  .vrow{background:var(--white);border:1px solid var(--divider);border-radius:8px;padding:14px 16px;margin-bottom:10px}
+  .vrow.suspect{border-color:var(--slate-light);background:var(--white)}
+  .vtext{font:400 0.9375rem/1.45 var(--sans);color:var(--slate)}
+  .quote{font:italic 400 0.875rem/1.5 var(--sans);color:var(--slate-dark);background:var(--xlight);
+    border-radius:4px;padding:8px 11px;margin:8px 0 0;display:block}
+  .vmeta{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .inferred{display:inline-flex;align-items:baseline;gap:6px}
+  .inferred .v{color:var(--sec-text);border-bottom:1px dotted var(--slate-med);cursor:pointer;font-variant-numeric:tabular-nums}
+  .inferred .tg{font:500 0.6875rem/1.3 var(--sans);color:var(--sec-text);letter-spacing:0.02em}
+  .confirmed{display:inline-flex;align-items:baseline;gap:5px;color:var(--slate);font-variant-numeric:tabular-nums}
+  .confirmed .ck{font-size:0.75rem;color:var(--indigo)}
+  .vactions{display:flex;gap:6px;margin-left:auto}
+  .ghosted{opacity:0.6;background:var(--xlight);border:1px dashed var(--slate-light)}
+  .ghosted .vtext{color:var(--sec-text)}
+  .suspect-note{font:500 0.75rem/1.4 var(--sans);color:var(--sec-text);display:inline-flex;align-items:center;gap:5px}
+  .restore-note{font:500 0.75rem/1.4 var(--sans);color:var(--sec-text)}
+  .btnrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .btn{font:500 0.9375rem/1 var(--sans);border-radius:6px;cursor:pointer;border:none;
+    padding:9px 16px;transition:background 180ms var(--ease)}
+  .btn:focus-visible{outline:2px solid var(--stroke);outline-offset:2px}
+  .btn-primary{background:var(--indigo);color:#fff}.btn-primary:hover{background:var(--bb2)}
+  .btn-secondary{background:var(--white);color:var(--indigo);border:1px solid var(--slate-light);padding:8px 15px}
+  .btn-secondary:hover{background:var(--xlight)}
+  .btn-ghost{background:transparent;color:var(--slate-dark);padding:8px 12px}.btn-ghost:hover{background:var(--xlight)}
+  .btn-danger{background:var(--white);color:var(--error);border:1px solid var(--slate-light);padding:8px 15px}
+  .btn-danger:hover{background:var(--rose20)}
+  .btn-xs{font-size:0.8125rem;padding:5px 10px}
+  .capture{display:block;width:100%;min-height:96px;background:var(--xlight);color:var(--slate);
+    font:400 0.9375rem/1.55 var(--sans);padding:14px 16px;border:1px solid var(--slate-light);border-radius:4px;
+    resize:vertical;transition:border-color 180ms,box-shadow 180ms}
+  .capture::placeholder{color:var(--sec-text)}
+  .capture:focus{outline:none;border-color:var(--indigo);box-shadow:0 0 0 2px var(--stroke)}
+  .destrow{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+  .destlbl{font:500 0.75rem/1.3 var(--sans);color:var(--sec-text)}
+  .destbtn{display:inline-flex;align-items:center;gap:8px;background:var(--white);border:1px solid var(--slate-light);
+    border-radius:6px;padding:8px 12px;font:500 0.875rem/1 var(--sans);color:var(--slate);cursor:pointer}
+  .destbtn.empty{color:var(--sec-text)}
+  .destbtn .car{color:var(--sec-text)}
+  .menu{background:var(--white);border:1px solid var(--divider);border-radius:8px;box-shadow:var(--float);
+    padding:6px;min-width:280px;margin-top:8px}
+  .menu .mh{font:500 0.6875rem/1.3 var(--sans);letter-spacing:0.06em;text-transform:uppercase;color:var(--sec-text);padding:8px 10px 4px}
+  .menu .mi{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:6px;cursor:pointer;
+    font:400 0.875rem/1.25 var(--sans);color:var(--slate)}
+  .menu .mi:hover{background:var(--xlight)}
+  .menu .mi .mdot{width:7px;height:7px;border-radius:999px;flex:none}
+  .menu .mi .mmeta{margin-left:auto;font:400 0.6875rem/1 var(--sans);color:var(--sec-text);font-variant-numeric:tabular-nums}
+  .menu .mi.new{color:var(--indigo);font-weight:500}
+  .menu hr{border:0;border-top:1px solid var(--divider);margin:5px 0}
+  .navrow{display:flex;gap:6px;background:var(--white);border:1px solid var(--divider);border-radius:10px;padding:6px}
+  .nav{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:9px 6px;border-radius:8px;
+    font:500 0.75rem/1 var(--sans);color:var(--sec-text);cursor:pointer;position:relative}
+  .nav.active{color:var(--indigo)}
+  .nav.active::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:22px;height:3px;border-radius:0 0 3px 3px;background:var(--amber)}
+  .nav.cap{color:var(--slate)}
+  .nav.cap .capdot{width:30px;height:30px;border-radius:999px;background:var(--indigo);color:#fff;
+    display:flex;align-items:center;justify-content:center}
+  .note{font:400 0.875rem/1.5 var(--sans);color:var(--sec-text);margin-top:14px;padding-top:14px;border-top:1px solid var(--divider)}
+  .rules{columns:2;column-gap:28px}
+  .rules .r{break-inside:avoid;margin:0 0 14px}
+  .rules .rn{font:600 0.9375rem/1.35 var(--sans);color:var(--slate)}
+  .rules .rb{font:400 0.875rem/1.5 var(--sans);color:var(--sec-text);margin-top:3px}
+  @media (max-width:640px){ .rules{columns:1} .wrap{padding:28px 16px 60px} }
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="board">
+    <p class="eyebrow">Meeting Assistant · Design Language</p>
+    <h1 class="board">The Instrument</h1>
+    <p class="northstar">A precision instrument with a sober institutional brand: deep Indigo gravitas
+      on a clean near-white canvas, one warm Amber signal for what needs you now, everything legible at
+      a glance. Time pressure is shown quietly, through tone and placement and plain words, never alarm.</p>
+  </header>
+
+  <section class="board">
+    <h2 class="board">Palette</h2>
+    <p class="sub">The system: an Indigo primary, a Slate neutral ramp, and warm Plum /
+      Rose / Amber accents. No greens, no teals. Contrast verified for WCAG AA.</p>
+    <div class="card">
+      <div class="grouplbl">Primary · Indigo</div>
+      <div class="ramp">
+        <div class="seg" style="background:#2C2A4A;color:#fff">2E234B</div>
+        <div class="seg" style="background:#423D6E;color:#fff">473B75</div>
+        <div class="seg" style="background:#645CA0;color:#fff">6B60AA</div>
+        <div class="seg" style="background:#9085D9;color:#fff">9085D9</div>
+        <div class="seg" style="background:#A8A2DE;color:#2C2A4A">A8A2DE</div>
+        <div class="seg" style="background:#C6C2E0;color:#2C2A4A">C5BFE4</div>
+      </div>
+      <div class="grouplbl">Neutral · Slate</div>
+      <div class="ramp">
+        <div class="seg" style="background:#25262B;color:#fff">282525</div>
+        <div class="seg" style="background:#565860;color:#fff">58595B</div>
+        <div class="seg" style="background:#7F8186;color:#fff">808285</div>
+        <div class="seg" style="background:#D2D4D7;color:#25262B">D1D3D4</div>
+        <div class="seg" style="background:#F2F3F4;color:#25262B">F2F2F2</div>
+      </div>
+      <div class="grouplbl">Accents (sparing, one-at-a-time, never status)</div>
+      <div class="grid swatches">
+        <div class="sw"><div class="chip" style="background:#F2853C"></div><div class="meta"><div class="nm">Amber</div><div class="hx">#F2853C</div><div class="role">THE scarce signal · next/active · &le;10%</div></div></div>
+        <div class="sw"><div class="chip" style="background:#E96B6E"></div><div class="meta"><div class="nm">Rose</div><div class="hx">#E96B6E</div><div class="role">category accent · never status</div></div></div>
+        <div class="sw"><div class="chip" style="background:#CE5780"></div><div class="meta"><div class="nm">Plum</div><div class="hx">#CE5780</div><div class="role">category accent · project tags</div></div></div>
+      </div>
+      <div class="grouplbl">System &amp; text</div>
+      <div class="grid swatches">
+        <div class="sw"><div class="chip" style="background:#706C82"></div><div class="meta"><div class="nm">Secondary text</div><div class="hx">#706C82</div><div class="role">muted · inferred · stale (4.7:1)</div></div></div>
+        <div class="sw"><div class="chip" style="background:#25262B"></div><div class="meta"><div class="nm">Slate</div><div class="hx">#25262B</div><div class="role">body ink (15.2:1)</div></div></div>
+        <div class="sw"><div class="chip" style="background:#2F77E0"></div><div class="meta"><div class="nm">Service</div><div class="hx">#2F77E0</div><div class="role">info/system · sparing</div></div></div>
+        <div class="sw"><div class="chip" style="background:#D32F2F"></div><div class="meta"><div class="nm">Errors</div><div class="hx">#D32F2F</div><div class="role">destructive confirm ONLY</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="board">
+    <h2 class="board">Typography · Aptos</h2>
+    <p class="sub">Aptos operates, Aptos Serif narrates. The artifact renders in Aptos, then
+      system fonts, so the identity rides on the scale and tracking. (If this looks like Segoe UI / Georgia,
+      your machine is showing the fallbacks.)</p>
+    <div class="card">
+      <div class="typerow"><span class="t-display">What needs you today</span><span class="typespec">Display · Aptos Serif 30 · 400</span></div>
+      <div class="typerow"><span class="t-headline">Atlas migration</span><span class="typespec">Headline · Aptos 24 · 400</span></div>
+      <div class="typerow"><span class="t-title">Do next</span><span class="typespec">Title · Aptos 18 · 600</span></div>
+      <div class="typerow"><span class="t-body">Send the revised timeline to Priya before the sync.</span><span class="typespec">Body · Aptos 16 · 400</span></div>
+      <div class="typerow"><span class="t-reading">Start with the Atlas timeline. If it slips past Thursday the vendor review has nothing to react to.</span><span class="typespec">Reading · Aptos 18 · 400</span></div>
+      <div class="typerow"><span class="t-label">WAITING ON OTHERS</span><span class="typespec">Label · Aptos 12 · 600 · +2%</span></div>
+      <div class="typerow"><span class="t-num">9 days · Jun 19 · 3 of 5 · $1,250</span><span class="typespec">Numeric · tabular-nums</span></div>
+    </div>
+  </section>
+
+  <section class="board">
+    <h2 class="board">The cockpit, in context</h2>
+    <p class="sub">Instant on open, deterministic, calm. One Amber marker shows what's next. Do-next
+      capped at five. The escalation ladder varies form, never volume: a quiet "since" note, an upward move
+      plus a plain prompt, never a louder color or a badge.</p>
+    <div class="mock">
+      <div class="mock-bar"><span class="dot3"><i></i><i></i><i></i></span><span class="mock-title">Cockpit</span></div>
+      <div class="mock-body">
+        <p class="greet">What needs you today</p>
+        <p class="greet-sub">Saturday, June 13 · 7 open across 4 meetings and 2 projects</p>
+
+        <div class="focus">
+          <p class="flbl">Today's focus</p>
+          <p>Start with the Atlas timeline for Priya. If it slips past Thursday, the vendor review has nothing to react to and the whole migration waits another week.</p>
+        </div>
+
+        <div class="ckpt-group">
+          <div class="ckpt-h"><span class="g">Do next</span><span class="c">3 of 5</span></div>
+          <div class="row">
+            <span class="row-mark"></span>
+            <div class="row-body">
+              <div class="row-text">Send the revised Atlas timeline to Priya</div>
+              <div class="row-meta">
+                <button class="tag"><span class="d"></span>Atlas migration</button>
+                <span class="pill pill-iowe">I owe</span>
+                <span class="age">due tomorrow</span>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <span class="row-mark"></span>
+            <div class="row-body">
+              <div class="row-text">Decide the staging cutover date with the infra team</div>
+              <div class="row-meta">
+                <button class="tag"><span class="d"></span>Atlas migration</button>
+                <span class="inferred"><span class="v">due Thu Jun 18</span><span class="tg">inferred</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ckpt-group">
+          <div class="ckpt-h"><span class="g">Waiting on others</span><span class="c">2</span></div>
+          <div class="row">
+            <span class="row-mark w"></span>
+            <div class="row-body">
+              <div class="row-text">Budget sign-off for the new hire</div>
+              <div class="row-meta">
+                <span class="pill pill-wait"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#2C2A4A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>waiting on Maria</span>
+                <span class="age">9 days</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ckpt-group">
+          <div class="ckpt-h"><span class="g">Slipping</span><span class="c">1</span></div>
+          <div class="row">
+            <span class="row-mark q"></span>
+            <div class="row-body">
+              <div class="row-text">Write up the Q2 retro takeaways</div>
+              <div class="row-meta">
+                <span class="pill pill-stale">untouched 16 days</span>
+                <span class="age">from Team weekly</span>
+              </div>
+              <div class="prompt">This has waited three weekly cycles. Close it out or let it go?</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="board">
+    <h2 class="board">The verification screen, in context</h2>
+    <p class="sub">Where trust is earned. Every proposal shows its verbatim source quote in a tinted inset,
+      inferred fields dotted-underlined, owner and project as inline pills. Unanchored quotes are flagged,
+      never deleted; a paraphrase of a dismissed item is ghosted with a restore option. Nothing commits
+      until you accept.</p>
+    <div class="mock">
+      <div class="mock-bar"><span class="dot3"><i></i><i></i><i></i></span><span class="mock-title">Verify · 4 items from your note</span></div>
+      <div class="mock-body">
+
+        <div class="vrow">
+          <div class="vtext">Send the revised Atlas timeline to Priya</div>
+          <blockquote class="quote">...I'll get Priya the updated timeline by Friday...</blockquote>
+          <div class="vmeta">
+            <span class="pill pill-iowe">I owe</span>
+            <button class="tag"><span class="d"></span>Atlas migration</button>
+            <span class="confirmed"><span class="ck">✓</span>due Fri Jun 19</span>
+            <span class="vactions"><button class="btn btn-ghost btn-xs">Edit</button><button class="btn btn-secondary btn-xs">Keep</button></span>
+          </div>
+        </div>
+
+        <div class="vrow suspect">
+          <div class="vtext">Follow up with legal on the data-processing addendum</div>
+          <div class="vmeta" style="margin-top:8px">
+            <span class="suspect-note">○ source not found in note — check before accepting</span>
+            <span class="vactions"><button class="btn btn-ghost btn-xs">Edit</button><button class="btn btn-secondary btn-xs">Keep anyway</button></span>
+          </div>
+        </div>
+
+        <div class="vrow ghosted">
+          <div class="vtext">Follow up with Maria about the budget</div>
+          <div class="vmeta" style="margin-top:8px">
+            <span class="restore-note">matches a dismissed item · tap to restore</span>
+            <span class="vactions"><button class="btn btn-secondary btn-xs">Accept anyway</button><button class="btn btn-ghost btn-xs">Dismiss again</button></span>
+          </div>
+        </div>
+
+        <div class="btnrow" style="margin-top:18px">
+          <button class="btn btn-primary">Accept 3 items</button>
+          <button class="btn btn-secondary">Something's wrong — redo</button>
+        </div>
+        <p class="note">"Something's wrong" runs one conversational re-extraction that keeps what you've
+          already edited and only adds or fixes what you flag. It never regenerates the whole set.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="board">
+    <h2 class="board">Capture, routing, and controls</h2>
+    <p class="sub">The front door. You paste, you choose the destination, the model is never asked where a
+      note goes. The picker selects nothing by default, so the human always picks. The note is saved before
+      anything is extracted.</p>
+    <div class="card">
+      <textarea class="capture" placeholder="Paste your meeting notes...">Synced with infra. Priya will own the timeline revision, I'll get it to her by Friday. Still waiting on Maria for budget sign-off. We decided to push staging cutover to after the vendor review.</textarea>
+      <div class="destrow">
+        <span class="destlbl">Send to</span>
+        <button class="destbtn empty">Choose a meeting or project <span class="car">&#9662;</span></button>
+        <button class="btn btn-primary" style="margin-left:auto">Save and analyze</button>
+      </div>
+      <div style="margin-top:16px">
+        <div class="menu" role="listbox" aria-label="Choose destination">
+          <div class="mh">Recent</div>
+          <div class="mi"><span class="mdot" style="background:#CE5780"></span>Atlas migration <span class="mmeta">project · 4 open</span></div>
+          <div class="mi"><span class="mdot" style="background:#A8A2DE"></span>Team weekly <span class="mmeta">weekly · met Jun 6</span></div>
+          <hr>
+          <div class="mh">Meetings</div>
+          <div class="mi"><span class="mdot" style="background:#A8A2DE"></span>1:1 with Maria <span class="mmeta">biweekly · met Jun 2</span></div>
+          <div class="mi new">+ Create new meeting</div>
+          <hr>
+          <div class="mh">Projects</div>
+          <div class="mi"><span class="mdot" style="background:#FFC5C6"></span>Hiring Q3 <span class="mmeta">on-hold · 2 open</span></div>
+          <div class="mi new">+ Create new project</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:18px;margin-top:18px">
+      <div class="card">
+        <div class="grouplbl">Buttons</div>
+        <div class="btnrow">
+          <button class="btn btn-primary">Save and analyze</button>
+          <button class="btn btn-secondary">Edit</button>
+          <button class="btn btn-ghost">Mark discussed</button>
+          <button class="btn btn-danger">Delete meeting</button>
+        </div>
+        <div class="grouplbl" style="margin-top:20px">Pills &amp; states</div>
+        <div class="btnrow">
+          <span class="pill pill-iowe">I owe</span>
+          <span class="pill pill-wait"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#2C2A4A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>waiting on Maria</span>
+          <span class="pill pill-stale">untouched 16 days</span>
+          <span class="pill pill-done">done</span>
+          <button class="tag"><span class="d"></span>Atlas migration</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="grouplbl">Navigation (phone)</div>
+        <div class="navrow">
+          <div class="nav active"><span style="font-size:1.1rem">◎</span>Cockpit</div>
+          <div class="nav"><span style="font-size:1.1rem">▤</span>Meetings</div>
+          <div class="nav cap"><span class="capdot">+</span>Capture</div>
+          <div class="nav"><span style="font-size:1.1rem">◇</span>Projects</div>
+        </div>
+        <div class="grouplbl" style="margin-top:20px">Inferred vs confirmed (no green available)</div>
+        <div style="display:flex;gap:18px;align-items:baseline;flex-wrap:wrap">
+          <span class="inferred"><span class="v">due Fri Jun 19</span><span class="tg">inferred</span></span>
+          <span class="confirmed"><span class="ck">✓</span>due Fri Jun 19 <span style="color:var(--sec-text);font-size:0.75rem;font-weight:500">confirmed</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="board">
+    <h2 class="board">The binding rules</h2>
+    <p class="sub">These carry the strategic line into every screen, several inherited from the plan's
+      behavioral constraints, all expressed in the palette.</p>
+    <div class="card">
+      <div class="rules">
+        <div class="r"><div class="rn">The One Voice Rule</div><div class="rb">Amber on at most 10% of any screen, only meaning "what's next / active." Primary buttons are Indigo, not Amber.</div></div>
+        <div class="r"><div class="rn">The No-Alarm Rule</div><div class="rb">Overdue, slipping, and stale never use Errors-red or Rose. Red is destructive-confirm only. Time pressure speaks in Secondary-text gray, placement, and plain words.</div></div>
+        <div class="r"><div class="rn">The Inferred Ink Rule</div><div class="rb">Inferred values are gray with a dotted underline + "inferred" tag; confirmed values are solid Slate with an Indigo check. No success-green; trust is never hue alone.</div></div>
+        <div class="r"><div class="rn">The Two-Voice Rule</div><div class="rb">Aptos Sans operates, Aptos Serif narrates. A serif label on a control is forbidden.</div></div>
+        <div class="r"><div class="rn">The Provenance Inset Rule</div><div class="rb">Every verbatim source quote sits in a tinted inset, italic, distinct from the model's paraphrase.</div></div>
+        <div class="r"><div class="rn">The Flat &amp; Precise Rule</div><div class="rb">Flat at rest, hairline borders, small radius. Shadow only on things that truly float: the picker, popovers, modals.</div></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

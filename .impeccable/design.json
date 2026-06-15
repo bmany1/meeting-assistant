@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-13",
+  "title": "Design System: Meeting Assistant",
+  "extensions": {
+    "colorMeta": {
+      "indigo": { "role": "primary", "displayName": "Indigo", "canonical": "#2C2A4A", "tonalRamp": ["#2C2A4A","#423D6E","#645CA0","#9085D9","#A8A2DE","#C6C2E0"] },
+      "slate": { "role": "neutral", "displayName": "Slate", "canonical": "#25262B", "tonalRamp": ["#25262B","#565860","#7F8186","#D2D4D7","#F2F3F4","#FFFFFF"] },
+      "amber": { "role": "secondary", "displayName": "Amber (the scarce signal)", "canonical": "#F2853C", "tonalRamp": ["#F2853C","#FFA170","#FFB994","#F8CFB4","#FBE7D8"] },
+      "rose": { "role": "tertiary", "displayName": "Rose (category accent only, never status)", "canonical": "#E96B6E", "tonalRamp": ["#E96B6E","#FF8A8D","#FFA7A9","#FFC5C6","#FBE1E1"] },
+      "plum": { "role": "tertiary", "displayName": "Plum (category accent)", "canonical": "#CE5780", "tonalRamp": ["#CE5780","#E0799C","#E89AB5","#EBBBCB","#F5DCE4"] },
+      "secondary-text": { "role": "neutral", "displayName": "Secondary Text / stale + inferred treatment", "canonical": "#706C82", "tonalRamp": ["#4B4564","#706C82","#9089A3","#ABA6BC","#C6C2E0"] },
+      "error": { "role": "system", "displayName": "Errors (destructive only)", "canonical": "#D32F2F", "tonalRamp": ["#8A0000","#B00000","#D32F2F","#F26C6C","#FFD6D6"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Aptos Serif. Cockpit greeting, empty-state hero, briefing H1, meeting/project names." },
+      "reading": { "displayName": "Reading", "purpose": "Aptos Serif. Narrated prose only: the daily focus narrative and Brief-me. 65-75ch." },
+      "body": { "displayName": "Body", "purpose": "Aptos Sans. The default: to-do text, notes, form values, UI copy." },
+      "label": { "displayName": "Label", "purpose": "Aptos Sans. Field labels, chip text, metadata, eyebrows." },
+      "numeric": { "displayName": "Numeric", "purpose": "Aptos Sans tabular-nums. All dates, counts, ages, figures so columns align." }
+    },
+    "shadows": [
+      { "name": "float", "value": "0 8px 24px rgba(40,37,37,0.12), 0 2px 6px rgba(40,37,37,0.07)", "purpose": "Destination picker, dropdowns, popovers." },
+      { "name": "modal", "value": "0 16px 48px rgba(40,37,37,0.18)", "purpose": "Centered modal dialogs." },
+      { "name": "lift-hover", "value": "0 1px 3px rgba(40,37,37,0.08)", "purpose": "The only at-rest-to-hover shadow, a whisper on an interactive card." }
+    ],
+    "motion": [
+      { "name": "ease-out-quart", "value": "cubic-bezier(0.25, 1, 0.5, 1)", "purpose": "Default easing for state transitions and reveals." },
+      { "name": "duration-state", "value": "180ms", "purpose": "Standard state-change transition (hover, selection, expand)." },
+      { "name": "duration-enter", "value": "240ms", "purpose": "Upper bound; calm crossfade for a newly-surfaced stale item. Never a pulse." },
+      { "name": "reduced-motion", "value": "transition: none; animation: none", "purpose": "prefers-reduced-motion: reduce alternative; crossfade or instant only." }
+    ],
+    "breakpoints": [
+      { "name": "phone", "value": "0px" },
+      { "name": "tablet", "value": "640px" },
+      { "name": "desktop", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The committing action (Save and analyze, Accept). Indigo fill so Amber stays the scarce signal.",
+      "html": "<button class=\"ds-btn-primary\">Save and analyze</button>",
+      "css": ".ds-btn-primary{background:#2C2A4A;color:#fff;font:500 0.9375rem Aptos,system-ui,-apple-system,'Segoe UI',sans-serif;padding:9px 16px;border:none;border-radius:6px;cursor:pointer;transition:background 180ms cubic-bezier(0.25,1,0.5,1)}.ds-btn-primary:hover{background:#423D6E}.ds-btn-primary:active{background:#211a36}.ds-btn-primary:focus-visible{outline:2px solid #C6C2E0;outline-offset:2px}@media(prefers-reduced-motion:reduce){.ds-btn-primary{transition:none}}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Non-committing actions (Cancel, Edit). White with a Slate-Light border, Indigo text.",
+      "html": "<button class=\"ds-btn-secondary\">Edit</button>",
+      "css": ".ds-btn-secondary{background:#fff;color:#2C2A4A;font:500 0.9375rem Aptos,system-ui,-apple-system,'Segoe UI',sans-serif;padding:8px 15px;border:1px solid #D2D4D7;border-radius:6px;cursor:pointer;transition:background 180ms cubic-bezier(0.25,1,0.5,1)}.ds-btn-secondary:hover{background:#F2F3F4}.ds-btn-secondary:focus-visible{outline:2px solid #C6C2E0;outline-offset:2px}@media(prefers-reduced-motion:reduce){.ds-btn-secondary{transition:none}}"
+    },
+    {
+      "name": "Capture Textarea",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "The front door: a large recessed well where a note dump is pasted before routing.",
+      "html": "<textarea class=\"ds-capture\" placeholder=\"Paste your meeting notes...\"></textarea>",
+      "css": ".ds-capture{display:block;width:100%;min-height:140px;background:#F2F3F4;color:#25262B;font:400 0.9375rem/1.55 Aptos,system-ui,-apple-system,'Segoe UI',sans-serif;padding:14px 16px;border:1px solid #D2D4D7;border-radius:4px;resize:vertical;box-sizing:border-box;transition:border-color 180ms,box-shadow 180ms}.ds-capture::placeholder{color:#706C82}.ds-capture:focus{outline:none;border-color:#2C2A4A;box-shadow:0 0 0 2px #C6C2E0}@media(prefers-reduced-motion:reduce){.ds-capture{transition:none}}"
+    },
+    {
+      "name": "Owner Pill (waiting-for)",
+      "kind": "chip",
+      "refersTo": "chip-waiting",
+      "description": "A commitment owed to the user by a named person. Indigo-6 tint, distinguished by hue + icon + label.",
+      "html": "<span class=\"ds-pill-waiting\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#2C2A4A\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M5 12h14M13 6l6 6-6 6\"/></svg>waiting on Maria</span>",
+      "css": ".ds-pill-waiting{display:inline-flex;align-items:center;gap:4px;background:#C6C2E0;color:#2C2A4A;font:500 0.75rem Aptos,system-ui,-apple-system,sans-serif;padding:2px 9px;border-radius:999px;white-space:nowrap}"
+    },
+    {
+      "name": "Cockpit Do-Next Row",
+      "kind": "card",
+      "refersTo": "card-row",
+      "description": "A single ranked next action. Amber marker (the scarce signal); project, owner, and a quiet tabular age label follow. Flat at rest.",
+      "html": "<div class=\"ds-row\"><span class=\"ds-row-mark\"></span><div class=\"ds-row-body\"><div class=\"ds-row-text\">Send the revised Atlas timeline to Priya</div><div class=\"ds-row-meta\"><button class=\"ds-tag-project\"><span class=\"ds-tag-dot\"></span>Atlas migration</button><span class=\"ds-row-age\">due tomorrow</span></div></div></div>",
+      "css": ".ds-row{display:flex;align-items:flex-start;gap:12px;background:#fff;border:1px solid #F1F2F3;border-radius:8px;padding:12px 14px;transition:box-shadow 180ms}.ds-row:hover{box-shadow:0 1px 3px rgba(40,37,37,0.08)}.ds-row-mark{flex:none;width:6px;height:6px;margin-top:7px;border-radius:999px;background:#F2853C}.ds-row-body{min-width:0}.ds-row-text{font:400 0.9375rem/1.45 Aptos,system-ui,-apple-system,sans-serif;color:#25262B}.ds-row-meta{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}.ds-row-age{font:400 0.75rem Aptos,system-ui,sans-serif;color:#706C82;font-variant-numeric:tabular-nums}.ds-tag-project{display:inline-flex;align-items:center;gap:6px;background:#F2F3F4;color:#565860;font:500 0.75rem Aptos,system-ui,sans-serif;padding:2px 9px;border:1px solid #F1F2F3;border-radius:999px;cursor:pointer}.ds-tag-dot{width:6px;height:6px;border-radius:999px;background:#CE5780}@media(prefers-reduced-motion:reduce){.ds-row{transition:none}}"
+    },
+    {
+      "name": "Inferred Field Mark",
+      "kind": "custom",
+      "refersTo": "inferred-mark",
+      "description": "A model-inferred, user-unconfirmed value. Dotted underline + 'inferred' label in Secondary-text; trust is never signaled by hue alone.",
+      "html": "<span class=\"ds-inferred\"><span class=\"ds-inferred-val\">due Fri Jun 19</span><span class=\"ds-inferred-tag\">inferred</span></span>",
+      "css": ".ds-inferred{display:inline-flex;align-items:baseline;gap:6px}.ds-inferred-val{color:#706C82;font:400 0.9375rem Aptos,system-ui,sans-serif;border-bottom:1px dotted #7F8186;cursor:pointer}.ds-inferred-tag{font:500 0.6875rem Aptos,system-ui,sans-serif;color:#706C82;letter-spacing:0.02em}.ds-inferred-val:hover{color:#25262B;border-bottom-color:#2C2A4A}"
+    },
+    {
+      "name": "Stale Item Pill",
+      "kind": "chip",
+      "refersTo": "pill-stale",
+      "description": "A slipping/overdue marker. Quiet Secondary-text gray, duration in words. Never red, never an accent, never a badge count.",
+      "html": "<span class=\"ds-pill-stale\">waiting 9 days</span>",
+      "css": ".ds-pill-stale{display:inline-flex;align-items:center;gap:4px;background:#F2F3F4;color:#706C82;font:500 0.75rem Aptos,system-ui,-apple-system,sans-serif;padding:2px 9px;border-radius:999px;white-space:nowrap;font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Provenance Inset",
+      "kind": "custom",
+      "refersTo": "provenance-inset",
+      "description": "The verbatim source quote under an extracted item. Tinted inset, italic, distinct from the model's paraphrase.",
+      "html": "<blockquote class=\"ds-quote\">...I'll get Priya the updated timeline by Friday...</blockquote>",
+      "css": ".ds-quote{margin:8px 0 0;background:#F2F3F4;border-radius:4px;padding:8px 11px;font:italic 400 0.875rem/1.5 Aptos,system-ui,-apple-system,sans-serif;color:#565860}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Instrument",
+    "overview": "A precision instrument wearing a sober institutional brand. Deep Indigo gravitas on a clean near-white canvas, one warm Amber signal for what needs you now, and everything legible at a glance. The interface recedes: Indigo and a disciplined Slate ramp do the structural work, Amber is spent like scarce currency, and the one next thing is always obvious. Time pressure is shown quietly through a muted Secondary-text gray, position, weight, and plain words, never red, badges, or volume. Red exists in exactly one place: destructive confirmation. There is no green in the palette, so done and confirmed are signaled by an Indigo check and a solid-vs-muted treatment, never an invented success color.",
+    "keyCharacteristics": [
+      "Calm, trustworthy, precise, in a sober institutional voice.",
+      "Indigo is the structural brand; Amber is the one scarce signal; the rest is a Slate ramp.",
+      "Quiet by default: time pressure shown through tone, placement, and words, never alarm.",
+      "Flat and precise: hairline borders, small radius, near-zero shadow.",
+      "Aptos two-voice type: Aptos Sans operates, Aptos Serif narrates.",
+      "Motion conveys state in 150 to 250ms, never choreography; full reduced-motion alternatives.",
+      "Responsive and phone-first: the cockpit is read on a phone between meetings."
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "Amber appears on at most 10% of any screen and only means 'this is what's next / active.' Primary actions and brand are Indigo, not Amber. If two things are Amber, neither is 'next.'", "section": "colors" },
+      { "name": "The No-Alarm Rule", "body": "Overdue, slipping, and stale are forbidden from using Errors-red, Rose, or any accent. Red means 'you are about to destroy something.' Time pressure is carried by Secondary-text gray, upward placement, and plain wording, never alarm color, badges, or saturation.", "section": "colors" },
+      { "name": "The Inferred Ink Rule", "body": "Inferred-but-unconfirmed values render in Secondary-text gray with a dotted underline and an 'inferred' tag; confirmed values render solid in Slate with an Indigo check. There is no success-green; trust is signaled by weight, check, and tag, never hue alone.", "section": "colors" },
+      { "name": "The Two-Voice Rule", "body": "Aptos Sans operates, Aptos Serif narrates. Anything the user clicks, types into, or reads as data is Aptos Sans. A serif label on a control is forbidden.", "section": "typography" },
+      { "name": "The Provenance Inset Rule", "body": "Every verbatim source quote sits in a tinted inset block, italic, visually distinct from the model's paraphrased item text above it. Provenance must look quoted and literal.", "section": "typography" },
+      { "name": "The Flat & Precise Rule", "body": "Surfaces are flat at rest with a small radius (2 to 8px, architectural, not pill-soft). Shadow only on popovers, dropdowns, and modals. Depth between a row and its background is one tonal step plus a hairline, never a shadow.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep Amber under 10% of any screen and only for 'what's next / active'; make primary buttons Indigo, not Amber.",
+      "Do show time pressure with Secondary-text gray, upward placement, and plain words.",
+      "Do put verbatim quotes in a tinted inset (italic), mark inferred values with a dotted underline + 'inferred' tag, and confirmed values with an Indigo check.",
+      "Do keep surfaces flat with hairline borders and small radius; reach for shadow only on the picker, popovers, and modals.",
+      "Do distinguish owner type, inferred-vs-confirmed, and stale state by icon, label, and weight, not hue alone.",
+      "Do set all dates, counts, and figures in tabular numerals so columns align.",
+      "Do give every animation a prefers-reduced-motion: reduce alternative; transitions 150 to 250ms, ease-out, state-only.",
+      "Do hold all text to AA: body and placeholders at Secondary-text (#706C82) or darker, never Slate Medium for small text."
+    ],
+    "donts": [
+      "Don't build a loud nagging productivity app: no red badges, no notification counts, no streaks, no overdue shaming. Escalation varies form, never volume.",
+      "Don't use Errors-red or Rose for overdue, slipping, or stale, ever. Red is destructive-confirm only.",
+      "Don't invent a success-green; the palette has none. Done/confirmed is an Indigo check plus solid-vs-muted treatment.",
+      "Don't build a generic SaaS dashboard: no hero-metric template, no gradient text, no identical card grids, no glassmorphism.",
+      "Don't build a cluttered enterprise tool: never show everything at one density with nothing prioritized.",
+      "Don't use a colored border-left/border-right stripe on cards, rows, or callouts.",
+      "Don't put Aptos Serif on any control the user operates; serif narrates, sans operates.",
+      "Don't stack drop shadows on at-rest surfaces; depth is the tonal step plus hairlines.",
+      "Don't add cute or gamified flourishes; this is a trust-first institutional instrument.",
+      "Don't use em dashes in any user-facing copy."
+    ]
+  }
+}

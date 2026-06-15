@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meeting Assistant — Shaped Screens</title>
+<style>
+  :root{
+    --indigo:#2C2A4A; --bb2:#423D6E; --bb3:#645CA0; --bb4:#9085D9; --bb6:#C6C2E0;
+    --slate:#25262B; --slate-dark:#565860; --slate-med:#7F8186; --slate-light:#D2D4D7; --xlight:#F2F3F4;
+    --sec-text:#706C82; --click-gray:#4B4564;
+    --amber:#F2853C; --plum:#CE5780; --rose:#E96B6E;
+    --divider:#F1F2F3; --stroke:#C6C2E0; --service:#2F77E0; --error:#D32F2F; --white:#fff;
+    --sans:Aptos,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    --serif:"Aptos Serif",Georgia,"Times New Roman",serif;
+    --float:0 8px 24px rgba(40,37,37,0.12),0 2px 6px rgba(40,37,37,0.07);
+    --modal:0 16px 48px rgba(40,37,37,0.18);
+    --lift:0 1px 3px rgba(40,37,37,0.08);
+    --ease:cubic-bezier(0.25,1,0.5,1);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:#1c1722;color:var(--slate);font:400 16px/1.6 var(--sans);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+  .tnum{font-variant-numeric:tabular-nums}
+  /* switcher */
+  .switch{position:sticky;top:0;z-index:50;background:#1c1722;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:12px 16px;border-bottom:1px solid #332b3f}
+  .switch .lab{color:#b3a9c4;font:600 12px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;margin-right:8px}
+  .switch button{font:600 13px/1 var(--sans);color:#cfc7da;background:#2a2336;border:1px solid #3d3450;border-radius:6px;padding:8px 12px;cursor:pointer}
+  .switch button:hover{background:#352c44}
+  .switch button.on{background:var(--amber);color:#3a1d05;border-color:var(--amber)}
+  .hint{color:#8a7fa0;font:400 12px/1.4 var(--sans);padding:6px 16px 14px;max-width:900px}
+  /* frame */
+  .frame{max-width:1180px;margin:18px auto;background:var(--divider);border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+  .screen{display:none}
+  .screen.active{display:block}
+  /* app shell */
+  .app{display:flex;min-height:760px}
+  .rail{width:220px;flex:none;background:var(--indigo);display:flex;flex-direction:column;padding:18px 12px 12px}
+  .rail-word{font:600 18px/1.2 var(--serif);color:#fff;padding:4px 8px 16px}
+  .rail-cap{display:flex;align-items:center;gap:8px;justify-content:center;background:#fff;color:var(--indigo);font:600 14px/1 var(--sans);border:none;border-radius:6px;padding:10px;cursor:pointer;margin-bottom:18px}
+  .rail-cap.capmode{background:#5a4a2e;color:#ffe1c6}
+  .rail-divider{height:1px;background:#43395a;margin:8px 4px}
+  .rail-nav{display:flex;align-items:center;gap:10px;position:relative;padding:11px 10px;border-radius:7px;color:var(--sec-text);font:600 16px/1 var(--sans);letter-spacing:.02em;cursor:pointer}
+  .rail-nav:hover{background:#3a2f4d;color:#cfc7da}
+  .rail-nav.active{color:#fff}
+  .rail-nav.active::before{content:"";position:absolute;left:-12px;width:6px;height:6px;border-radius:999px;background:var(--amber)}
+  .rail-ico{width:16px;height:16px;display:inline-block;opacity:.85}
+  .rail-foot{margin-top:auto;display:flex;flex-direction:column;gap:2px}
+  .rail-util{text-align:left;background:none;border:none;color:#9b91ad;font:500 14px/1 var(--sans);padding:9px 10px;border-radius:6px;cursor:pointer}
+  .rail-util:hover{background:#3a2f4d;color:#cfc7da}
+  .rail-util.faint{color:#7d7390}
+  .stage{flex:1;background:var(--xlight);overflow:auto;max-height:760px}
+  .pad{max-width:760px;margin:0 auto;padding:28px 28px 60px}
+  /* shared atoms */
+  .eyebrow{font:600 12px/1.3 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--sec-text)}
+  .greet{font:600 30px/1.2 var(--serif);letter-spacing:-.01em;color:var(--slate);margin:0}
+  .meta{font:400 12px/1.4 var(--sans);color:var(--sec-text)}
+  .card{background:var(--white);border:1px solid var(--divider);border-radius:8px;padding:20px}
+  .seclabel{font:600 12px/1.3 var(--sans);letter-spacing:.02em;text-transform:uppercase;color:var(--sec-text);margin:0 0 9px}
+  .btn{font:600 14px/1 var(--sans);border-radius:6px;cursor:pointer;border:none;padding:9px 16px;transition:background 150ms var(--ease)}
+  .btn:focus-visible{outline:2px solid var(--stroke);outline-offset:2px}
+  .btn-primary{background:var(--indigo);color:#fff}.btn-primary:hover{background:var(--bb2)}
+  .btn-secondary{background:#fff;color:var(--indigo);border:1px solid var(--slate-light);padding:8px 15px}.btn-secondary:hover{background:var(--xlight)}
+  .btn-ghost{background:none;color:var(--slate-dark);padding:7px 10px}.btn-ghost:hover{background:var(--xlight)}
+  .btn-disabled{background:none;color:var(--slate-med);border:1px solid var(--divider);padding:8px 15px;cursor:not-allowed}
+  .btn-xs{font-size:13px;padding:5px 9px}
+  .pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 9px;font:600 12px/1.4 var(--sans);white-space:nowrap}
+  .pill svg{display:block}
+  .pill-iowe{background:var(--xlight);color:var(--slate-dark)}
+  .pill-wait{background:var(--bb6);color:var(--indigo)}
+  .pill-stale{background:var(--xlight);color:var(--sec-text)}
+  .pill-status{background:var(--xlight);color:var(--slate-dark)}
+  .tag{display:inline-flex;align-items:center;gap:6px;background:var(--xlight);color:var(--slate-dark);font:600 12px/1.4 var(--sans);padding:2px 9px;border:1px solid var(--divider);border-radius:999px;cursor:pointer}
+  .tag .d{width:6px;height:6px;border-radius:999px}
+  .dot-atlas{background:var(--plum)} .dot-hiring{background:var(--rose)}
+  .inferred .v{color:var(--sec-text);border-bottom:1px dotted var(--slate-med);cursor:pointer}
+  .inferred .tg{font:600 11px/1.3 var(--sans);color:var(--sec-text);letter-spacing:.02em;margin-left:6px}
+  .confirmed{color:var(--slate);display:inline-flex;align-items:baseline;gap:5px}
+  .confirmed .ck{color:var(--indigo);font-size:12px}
+  .quote{display:block;margin:8px 0 0;background:var(--xlight);border-radius:4px;padding:8px 11px;font:italic 400 14px/1.5 var(--sans);color:var(--slate-dark)}
+  .qlabel{font:400 12px/1.4 var(--sans);color:var(--sec-text);margin-top:8px}
+  .rowacts{display:flex;gap:4px;margin-left:auto}
+  /* cockpit */
+  .ckhead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
+  .filter{display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid var(--divider);border-radius:6px;padding:6px 10px;font:600 13px/1 var(--sans);color:var(--slate-dark);cursor:pointer}
+  .focus{background:#fff;border:1px solid var(--divider);border-radius:8px;padding:18px 20px;margin-bottom:22px}
+  .focus p{font:400 18px/1.6 var(--sans);color:var(--slate);margin:8px 0 0;max-width:66ch}
+  .group{margin:0 0 20px}
+  .row{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--divider);border-radius:8px;padding:13px 15px;margin-bottom:8px}
+  .row:hover{box-shadow:var(--lift)}
+  .row.slip .rtext{color:var(--sec-text)}
+  .rmark{flex:none;width:7px;height:7px;margin-top:6px;border-radius:999px;background:var(--amber)}
+  .rmark.none{background:transparent}
+  .rbody{flex:1;min-width:0}
+  .rtext{font:400 16px/1.45 var(--sans);color:var(--slate)}
+  .rmeta{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .age{font:400 12px/1.4 var(--sans);color:var(--sec-text)}
+  .overflow{font:500 13px/1.4 var(--sans);color:var(--sec-text);padding:2px 4px}
+  /* verification */
+  .vhead h2{font:600 24px/1.1 var(--sans);letter-spacing:-.02em;color:var(--slate);margin:0 0 6px}
+  .vsub{font:400 16px/1.5 var(--sans);color:var(--slate)}
+  .vcount{font:400 12px/1.4 var(--sans);color:var(--sec-text);margin-top:2px}
+  .ghosted{background:var(--xlight);border:1px dashed var(--slate-light);border-radius:8px;padding:11px 14px;margin:14px 0;color:var(--sec-text);font:500 13px/1.4 var(--sans);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .vcard{background:#fff;border:1px solid var(--divider);border-radius:6px;padding:15px;margin-bottom:10px}
+  .vctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:9px}
+  .vtext{font:400 16px/1.5 var(--sans);color:var(--slate)}
+  .suspect{font:500 13px/1.4 var(--sans);color:var(--sec-text);background:var(--xlight);border-radius:4px;padding:8px 11px;margin-top:8px;display:inline-block}
+  .acceptbar{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--divider);display:flex;align-items:center;gap:12px;padding:14px 0;margin-top:6px}
+  /* capture */
+  .well{display:block;width:100%;min-height:120px;background:var(--xlight);color:var(--slate);font:400 16px/1.6 var(--sans);padding:14px 16px;border:1px solid var(--slate-light);border-radius:4px;resize:vertical}
+  .well:focus{outline:none;border-color:var(--indigo);box-shadow:0 0 0 2px var(--stroke)}
+  .destrow{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .destlbl{font:600 12px/1.3 var(--sans);color:var(--sec-text)}
+  .destbtn{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--slate-light);border-radius:6px;padding:8px 12px;font:600 14px/1 var(--sans);color:var(--slate);cursor:pointer}
+  .menu{background:#fff;border:1px solid var(--divider);border-radius:8px;box-shadow:var(--float);padding:6px;width:320px;margin-top:14px}
+  .menu .mfilter{width:100%;background:var(--xlight);border:1px solid var(--slate-light);border-radius:4px;padding:8px 10px;font:400 14px/1.4 var(--sans);color:var(--slate);margin-bottom:4px}
+  .mh{font:600 11px/1.3 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--sec-text);padding:8px 10px 4px}
+  .mi{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:6px;cursor:pointer;font:400 14px/1.25 var(--sans);color:var(--slate)}
+  .mi:hover{background:var(--xlight)}
+  .mi .mdot{width:7px;height:7px;border-radius:999px;flex:none}
+  .mi .mmeta{margin-left:auto;font:400 11px/1 var(--sans);color:var(--sec-text)}
+  .mi.new{color:var(--indigo);font-weight:600}
+  .menu hr{border:0;border-top:1px solid var(--divider);margin:5px 0}
+  /* project */
+  .pback{font:600 14px/1 var(--sans);color:var(--slate-dark);background:none;border:none;cursor:pointer;padding:0 0 12px;display:inline-flex;align-items:center;gap:5px}
+  .phead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .pname{font:600 30px/1.2 var(--serif);letter-spacing:-.01em;color:var(--slate);margin:0}
+  .pmeta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .updrow{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--divider);font:400 14px/1.5 var(--sans)}
+  .updrow:last-child{border-bottom:0}
+  .upddate{color:var(--sec-text);flex:none;width:84px}
+  .updsrc{color:var(--slate-dark);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+  /* empty / first run */
+  .firstrun{max-width:560px;margin:0 auto;padding:64px 24px}
+  .fr-title{font:600 30px/1.2 var(--serif);letter-spacing:-.01em;color:var(--indigo);margin:0 0 8px}
+  .fr-desc{font:400 18px/1.6 var(--sans);color:var(--slate);margin:0 0 16px}
+  .fr-limit{font:400 13px/1.5 var(--sans);color:var(--sec-text);margin:0 0 24px}
+  .sample{background:#fff;border:1px solid var(--slate-light);border-radius:6px;padding:20px}
+  .sample-h{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+  .sample-h .dot{width:8px;height:8px;border-radius:999px;background:var(--amber)}
+  .sample-h .t{font:600 18px/1.3 var(--sans);color:var(--slate)}
+  .sample p{font:400 16px/1.55 var(--sans);color:var(--slate);margin:0 0 16px}
+  .fr-import{display:block;margin-top:16px;background:none;border:none;color:var(--slate-dark);font:600 14px/1 var(--sans);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+  .emptyblock{padding:6px 0 0}
+  .emptyblock .t{font:600 18px/1.3 var(--sans);color:var(--slate);margin:0 0 6px}
+  .emptyblock p{font:400 16px/1.55 var(--sans);color:var(--slate);margin:0 0 16px;max-width:60ch}
+  .allclear{display:flex;align-items:center;gap:9px;font:600 16px/1.4 var(--sans);color:var(--slate)}
+  .allclear .ck{color:var(--indigo)}
+  .divlabel{display:flex;align-items:center;gap:10px;margin:30px 0 12px;color:var(--sec-text);font:600 12px/1 var(--sans);letter-spacing:.04em;text-transform:uppercase}
+  .divlabel::after{content:"";flex:1;height:1px;background:var(--slate-light)}
+  /* phone */
+  .phonewrap{display:flex;justify-content:center;padding:30px;background:var(--divider)}
+  .phone{width:380px;background:var(--xlight);border-radius:30px;border:10px solid #1c1722;overflow:hidden;position:relative;height:720px;display:flex;flex-direction:column}
+  .ptop{background:#fff;border-bottom:1px solid var(--divider);padding:12px 16px;font:600 18px/1 var(--serif);color:var(--slate)}
+  .pbody{flex:1;overflow:auto;padding:18px 16px 16px}
+  .pbar{background:#fff;border-top:1px solid var(--divider);display:flex;align-items:flex-end;justify-content:space-around;padding:8px 8px 14px}
+  .ptab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--sec-text);font:600 12px/1 var(--sans);position:relative;cursor:pointer}
+  .ptab.active{color:var(--indigo)}
+  .ptab.active::before{content:"";position:absolute;top:-6px;width:6px;height:6px;border-radius:999px;background:var(--amber)}
+  .ptab .pi{width:20px;height:20px;color:var(--slate-med)}
+  .ptab.active .pi{color:var(--indigo)}
+  .pcap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .pcap .cbtn{width:46px;height:46px;border-radius:999px;background:var(--indigo);color:#fff;display:flex;align-items:center;justify-content:center;margin-top:-18px;box-shadow:var(--lift);font-size:22px}
+  .pcap .cl{font:600 12px/1 var(--sans);color:var(--slate)}
+  svg.ic{stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  /* meetings list + meeting detail */
+  .mlhead{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .h-list{font:600 24px/1.1 var(--sans);letter-spacing:-.02em;color:var(--slate);margin:0;flex:none}
+  .search{flex:1;max-width:220px;margin-left:auto;background:#fff;border:1px solid var(--slate-light);border-radius:6px;padding:8px 10px;font:400 14px var(--sans);color:var(--slate)}
+  .mlrow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .mlname{font:600 20px/1.2 var(--serif);color:var(--slate);cursor:pointer}
+  .acts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .tp{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--divider);font:400 15px var(--sans);color:var(--slate)}
+  .tp:last-child{border-bottom:0}
+  .tp.done .grow{color:var(--sec-text);text-decoration:line-through;text-decoration-color:var(--slate-light)}
+  .tp .grow{flex:1}
+  .tpcheck{width:16px;height:16px;border:1.5px solid var(--slate-light);border-radius:4px;flex:none}
+  .tpcheck.on{background:var(--indigo);border-color:var(--indigo);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px}
+  .noterow{padding:10px 0;border-bottom:1px solid var(--divider)}
+  .noterow:last-child{border-bottom:0}
+  .notets{font:400 12px var(--sans);color:var(--sec-text)}
+  .notetext{font:400 15px/1.5 var(--sans);color:var(--slate);margin-top:2px}
+  .brief h4{font:600 12px/1.3 var(--sans);letter-spacing:.02em;text-transform:uppercase;color:var(--sec-text);margin:14px 0 5px}
+  .brief h4:first-child{margin-top:0}
+  .brief p{font:400 16px/1.55 var(--sans);color:var(--slate);margin:0}
+  .completed-exp{font:500 13px var(--sans);color:var(--sec-text);padding:8px 0 0;cursor:pointer}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div class="switch">
+  <span class="lab">Surface</span>
+  <button data-s="cockpit" class="on">Cockpit</button>
+  <button data-s="verify">Verification</button>
+  <button data-s="capture">Capture + picker</button>
+  <button data-s="project">Project view</button>
+  <button data-s="meetings">Meetings list</button>
+  <button data-s="meeting">Meeting detail</button>
+  <button data-s="empty">Empty / first-run</button>
+  <button data-s="phone">Phone</button>
+</div>
+<div class="hint">design system, real Aptos scale. Live application of the shaped specs + the coherence contract. One Amber per screen (the do-next marker), quiet gray for slipping, provenance pre-expanded, inferred dotted, no red except destructive-confirm. Fonts fall back to Aptos/Segoe/Georgia on machines without custom brand faces.</div>
+
+<!-- ============ COCKPIT ============ -->
+<div class="frame screen active" id="s-cockpit">
+  <div class="app">
+    <nav class="rail">
+      <div class="rail-word">Meeting Assistant</div>
+      <button class="rail-cap"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Capture</button>
+      <div class="rail-nav active" data-rail="cockpit">Cockpit</div>
+      <div class="rail-nav" data-rail="meetings">Meetings</div>
+      <div class="rail-nav" data-rail="projects">Projects</div>
+      <div class="rail-foot">
+        <div class="rail-divider"></div>
+        <button class="rail-util">Export</button>
+        <button class="rail-util">Import</button>
+        <button class="rail-util faint">Clear sample data</button>
+      </div>
+    </nav>
+    <div class="stage"><div class="pad">
+      <div class="ckhead">
+        <div>
+          <h1 class="greet">Saturday, June 13</h1>
+          <div class="meta" style="margin-top:2px">3 to do next, 1 slipping</div>
+        </div>
+        <button class="filter">All projects <svg class="ic" width="12" height="12" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      </div>
+
+      <div class="focus">
+        <div class="eyebrow">Today's focus</div>
+        <p>Send Priya the Atlas migration cutover plan first. The Team weekly meets Monday and needs it to lock the cutover date; without it that decision slips a week.</p>
+      </div>
+
+      <div class="group">
+        <div class="seclabel">Do next</div>
+        <div class="row">
+          <span class="rmark"></span>
+          <div class="rbody">
+            <div class="rtext">Send Priya the Atlas migration cutover plan</div>
+            <div class="qlabel">From Team weekly, Jun 12</div>
+            <span class="quote">Priya, can you have the cutover plan to me before Monday?</span>
+            <div class="rmeta">
+              <span class="pill pill-iowe">I owe</span>
+              <button class="tag"><span class="d dot-atlas"></span>Atlas migration</button>
+              <span class="age">due Mon Jun 15</span>
+              <span class="rowacts"><button class="btn btn-ghost btn-xs">Done</button><button class="btn btn-ghost btn-xs">Dismiss</button><button class="btn btn-ghost btn-xs">Snooze</button></span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <span class="rmark none"></span>
+          <div class="rbody">
+            <div class="rtext">Review Hiring Q3 candidate shortlist</div>
+            <div class="rmeta">
+              <span class="pill pill-iowe">I owe</span>
+              <button class="tag"><span class="d dot-hiring"></span>Hiring Q3</button>
+              <span class="age">due Thu Jun 18</span>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <span class="rmark none"></span>
+          <div class="rbody">
+            <div class="rtext">Draft the Atlas rollback checklist</div>
+            <div class="rmeta"><span class="pill pill-iowe">I owe</span><button class="tag"><span class="d dot-atlas"></span>Atlas migration</button></div>
+          </div>
+        </div>
+        <div class="overflow">2 more in Due soon</div>
+      </div>
+
+      <div class="group">
+        <div class="seclabel">Due soon</div>
+        <div class="row">
+          <span class="rmark none"></span>
+          <div class="rbody">
+            <div class="rtext">Confirm budget headcount with Maria</div>
+            <div class="rmeta">
+              <button class="tag"><span class="d dot-hiring"></span>Hiring Q3</button>
+              <span class="inferred"><span class="v">inferred due ~Thu</span><span class="tg">inferred</span></span>
+              <button class="btn btn-ghost btn-xs">Confirm date</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="seclabel">Waiting on others</div>
+        <div class="row">
+          <span class="rmark none"></span>
+          <div class="rbody">
+            <div class="rtext">Cutover window sign-off</div>
+            <div class="rmeta">
+              <span class="pill pill-wait"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" style="stroke:var(--indigo)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Waiting on Dana</span>
+              <span class="age">asked Jun 10</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="seclabel">Slipping</div>
+        <div class="row slip">
+          <span class="rmark none"></span>
+          <div class="rbody">
+            <div class="rtext">Priya has waited 9 days for the cutover plan.</div>
+            <div class="rmeta">
+              <span class="pill pill-stale">committed 9 days ago, no movement</span>
+              <button class="tag"><span class="d dot-atlas"></span>Atlas migration</button>
+              <span class="rowacts"><button class="btn btn-ghost btn-xs">Done</button><button class="btn btn-ghost btn-xs">Dismiss</button><button class="btn btn-ghost btn-xs">Snooze</button></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ VERIFICATION ============ -->
+<div class="frame screen" id="s-verify">
+  <div class="app">
+    <nav class="rail">
+      <div class="rail-word">Meeting Assistant</div>
+      <button class="rail-cap capmode"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Capture</button>
+      <div class="rail-nav" data-rail="cockpit">Cockpit</div>
+      <div class="rail-nav" data-rail="meetings">Meetings</div>
+      <div class="rail-nav" data-rail="projects">Projects</div>
+      <div class="rail-foot"><div class="rail-divider"></div><button class="rail-util">Export</button><button class="rail-util">Import</button></div>
+    </nav>
+    <div class="stage"><div class="pad" style="max-width:780px">
+      <div class="vhead">
+        <h2>Review extraction</h2>
+        <div class="vsub">Found these in your notes. Check each before saving.</div>
+        <div class="vcount">6 items from Team weekly, June 13. Nothing is saved until you accept.</div>
+      </div>
+
+      <div class="ghosted">
+        <span>Matches a dismissed item: &ldquo;follow up with Maria about budget&rdquo;. Tap to review.</span>
+        <span class="rowacts"><button class="btn btn-secondary btn-xs">Accept anyway</button><button class="btn btn-ghost btn-xs">Dismiss again</button></span>
+      </div>
+
+      <div class="seclabel" style="margin-top:18px">To-dos</div>
+      <div class="vcard">
+        <div class="vctl">
+          <span class="pill pill-iowe">I owe</span>
+          <button class="tag"><span class="d dot-atlas"></span>Atlas migration</button>
+          <span class="rowacts"><button class="btn btn-ghost btn-xs">Edit</button><button class="btn btn-ghost btn-xs">Dismiss</button></span>
+        </div>
+        <div class="vtext">Send the migration runbook to Priya</div>
+        <span class="inferred" style="display:inline-block;margin-top:4px"><span class="v">due Tue Jun 16</span><span class="tg">inferred</span></span>
+        <div class="qlabel">From your note:</div>
+        <span class="quote">I will get the runbook over to Priya before the cutover.</span>
+      </div>
+
+      <div class="vcard">
+        <div class="vctl">
+          <span class="pill pill-wait"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" style="stroke:var(--indigo)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Waiting on Dana</span>
+          <button class="tag"><span class="d dot-atlas"></span>Atlas migration</button>
+          <span class="rowacts"><button class="btn btn-ghost btn-xs">Edit</button><button class="btn btn-ghost btn-xs">Dismiss</button></span>
+        </div>
+        <div class="vtext">Maintenance window confirmation</div>
+        <span class="confirmed" style="margin-top:4px"><span class="ck">&#10003;</span>due Wed Jun 17</span>
+        <div class="qlabel">From your note:</div>
+        <span class="quote">Dana said he would confirm the maintenance window by Wednesday.</span>
+      </div>
+
+      <div class="vcard">
+        <div class="vctl">
+          <span class="pill pill-iowe">I owe</span>
+          <button class="tag"><span class="d dot-hiring"></span>Hiring Q3</button>
+          <span class="rowacts"><button class="btn btn-ghost btn-xs">Edit</button><button class="btn btn-ghost btn-xs">Dismiss</button></span>
+        </div>
+        <div class="vtext">Confirm the Hiring Q3 headcount with Dana</div>
+        <span class="suspect">Source not found in note. Check this before accepting.</span>
+      </div>
+
+      <div class="seclabel" style="margin-top:18px">Decisions</div>
+      <div class="vcard">
+        <div class="vctl">
+          <button class="tag"><span class="d dot-atlas"></span>Atlas migration</button>
+          <span class="rowacts"><button class="btn btn-ghost btn-xs">Edit</button><button class="btn btn-ghost btn-xs">Dismiss</button></span>
+        </div>
+        <div class="vtext">Atlas cutover moved to July 6.</div>
+        <div class="qlabel">From your note:</div>
+        <span class="quote">we agreed to push the cutover to the 6th given the QA backlog.</span>
+      </div>
+
+      <div class="seclabel" style="margin-top:18px">Possible completions</div>
+      <div class="vcard">
+        <div class="vctl"><span class="rowacts"><button class="btn btn-ghost btn-xs">Edit</button><button class="btn btn-ghost btn-xs">Dismiss</button></span></div>
+        <div class="vtext">Sign the vendor contract</div>
+        <div class="meta" style="margin-top:3px">Possible match for an open to-do. Accept only if it is really done.</div>
+        <div class="qlabel">From your note:</div>
+        <span class="quote">Maria confirmed the vendor contract is signed.</span>
+      </div>
+
+      <div class="acceptbar">
+        <button class="btn btn-secondary">Add or fix something</button>
+        <button class="btn btn-primary" style="margin-left:auto">Accept 6 items</button>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ CAPTURE ============ -->
+<div class="frame screen" id="s-capture">
+  <div class="app">
+    <nav class="rail">
+      <div class="rail-word">Meeting Assistant</div>
+      <button class="rail-cap capmode"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Capture</button>
+      <div class="rail-nav" data-rail="cockpit">Cockpit</div>
+      <div class="rail-nav" data-rail="meetings">Meetings</div>
+      <div class="rail-nav" data-rail="projects">Projects</div>
+      <div class="rail-foot"><div class="rail-divider"></div><button class="rail-util">Export</button><button class="rail-util">Import</button></div>
+    </nav>
+    <div class="stage"><div class="pad" style="max-width:720px">
+      <div class="eyebrow">Capture</div>
+      <h1 class="greet" style="font-size:30px;margin:6px 0 4px">New note</h1>
+      <div class="meta" style="font-size:14px;margin-bottom:18px">Paste a note, choose where it goes. It is saved before anything is read.</div>
+
+      <div class="card">
+        <textarea class="well">Synced with infra. Priya will own the timeline revision, I'll get it to her by Friday. Still waiting on Maria for budget sign-off. We decided to push staging cutover to after the vendor review.</textarea>
+        <div class="destrow">
+          <span class="destlbl">Send to</span>
+          <button class="destbtn"><span class="tag" style="border:none;background:none;padding:0;gap:6px"><span class="d dot-atlas"></span></span>Atlas migration <button class="btn btn-ghost btn-xs" style="padding:0 4px">change</button></button>
+          <button class="btn btn-primary" style="margin-left:auto">Save and analyze</button>
+        </div>
+      </div>
+
+      <div class="meta" style="margin:18px 0 6px">Picker, open (nothing selected by default, the human always picks):</div>
+      <div class="menu" role="listbox" aria-label="Choose destination">
+        <input class="mfilter" placeholder="Type to filter, or name a new one">
+        <div class="mh">Recent</div>
+        <div class="mi"><span class="mdot dot-atlas"></span>Atlas migration<span class="mmeta">project / 4 open</span></div>
+        <div class="mi"><span class="mdot dot-hiring"></span>Team weekly<span class="mmeta">weekly / met Jun 6</span></div>
+        <hr>
+        <div class="mh">Meetings</div>
+        <div class="mi"><span class="mdot" style="background:var(--bb4)"></span>1:1 with Maria<span class="mmeta">biweekly / met Jun 2</span></div>
+        <div class="mi new">+ Create new meeting</div>
+        <hr>
+        <div class="mh">Projects</div>
+        <div class="mi"><span class="mdot dot-hiring"></span>Hiring Q3<span class="mmeta">on-hold / 2 open</span></div>
+        <div class="mi new">+ Create new project</div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ PROJECT ============ -->
+<div class="frame screen" id="s-project">
+  <div class="app">
+    <nav class="rail">
+      <div class="rail-word">Meeting Assistant</div>
+      <button class="rail-cap"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Capture</button>
+      <div class="rail-nav" data-rail="cockpit">Cockpit</div>
+      <div class="rail-nav" data-rail="meetings">Meetings</div>
+      <div class="rail-nav active" data-rail="projects">Projects</div>
+      <div class="rail-foot"><div class="rail-divider"></div><button class="rail-util">Export</button><button class="rail-util">Import</button></div>
+    </nav>
+    <div class="stage"><div class="pad">
+      <button class="pback"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Projects / Atlas migration</button>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="phead">
+          <div>
+            <h1 class="pname">Atlas migration</h1>
+            <div class="pmeta">
+              <span class="pill pill-status">Active</span>
+              <span class="meta" style="font-size:13px"><span class="d dot-atlas" style="display:inline-block;width:6px;height:6px;border-radius:999px"></span> Target Jun 30 2026 &middot; Across Team weekly, 1:1 with Maria, and 2 direct updates</span>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-xs">Edit project</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="seclabel" style="margin:0">Summary</div>
+          <button class="btn btn-ghost btn-xs">Regenerate</button>
+        </div>
+        <p style="font:400 18px/1.6 var(--sans);color:var(--slate);margin:10px 0 0;max-width:66ch">Atlas migration is mid-flight. The revised migration plan is with Priya for review, and the cutover window is tentatively the week of Jun 23. Maria owns the data-mapping signoff, still outstanding. Two infra dependencies were resolved this week; the staging environment is the remaining blocker before a go/no-go.</p>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="seclabel">I owe</div>
+        <div class="row slip" style="border:none;border-bottom:1px solid var(--divider);border-radius:0;box-shadow:none;padding:11px 0">
+          <div class="rbody">
+            <div class="rtext">Send revised migration plan to Priya</div>
+            <div class="qlabel">From Team weekly, Jun 11:</div>
+            <span class="quote">get the revised plan over to Priya before the cutover review</span>
+            <div class="rmeta">
+              <span class="pill pill-iowe">I owe</span>
+              <span class="inferred"><span class="v">due Jun 16 2026</span><span class="tg">inferred</span></span>
+              <span class="pill pill-stale">committed 9 days ago, no movement</span>
+              <span class="rowacts"><button class="btn btn-ghost btn-xs">Done</button><button class="btn btn-ghost btn-xs">Snooze</button><button class="btn btn-ghost btn-xs">Owner</button></span>
+            </div>
+          </div>
+        </div>
+        <div class="row" style="border:none;border-radius:0;box-shadow:none;padding:11px 0 0">
+          <div class="rbody">
+            <div class="rtext">Confirm staging environment readiness</div>
+            <div class="qlabel">From 1:1 with Maria, Jun 09:</div>
+            <span class="quote">need staging green before we can call go/no-go</span>
+            <div class="rmeta">
+              <span class="pill pill-iowe">I owe</span>
+              <span class="confirmed"><span class="ck">&#10003;</span>due Jun 18 2026</span>
+              <span class="rowacts"><button class="btn btn-ghost btn-xs">Done</button><button class="btn btn-ghost btn-xs">Snooze</button><button class="btn btn-ghost btn-xs">Owner</button></span>
+            </div>
+          </div>
+        </div>
+        <div class="seclabel" style="margin:18px 0 9px">Waiting for</div>
+        <div class="row slip" style="border:none;border-radius:0;box-shadow:none;padding:11px 0 0">
+          <div class="rbody">
+            <div class="rtext">Data-mapping signoff</div>
+            <div class="qlabel">From 1:1 with Maria, Jun 09:</div>
+            <span class="quote">Maria will sign off on the mapping by end of week</span>
+            <div class="rmeta">
+              <span class="pill pill-wait"><svg class="ic" width="12" height="12" viewBox="0 0 24 24" style="stroke:var(--indigo)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Waiting on Maria</span>
+              <span class="pill pill-stale">committed 9 days ago, no movement</span>
+              <span class="rowacts"><button class="btn btn-ghost btn-xs">Snooze</button><button class="btn btn-ghost btn-xs">Owner</button></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="seclabel">Decisions</div>
+        <div class="row" style="border:none;border-radius:0;box-shadow:none;padding:9px 0 0">
+          <div class="rbody">
+            <div class="rtext">Cutover window set to the week of Jun 23</div>
+            <span class="quote">we agreed to target the week of the 23rd for cutover</span>
+            <div class="rmeta"><span class="updsrc">Team weekly, Jun 11 2026</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="seclabel">Recent updates</div>
+        <div class="updrow"><span class="upddate">Jun 11 2026</span><span>Staging blocker identified, infra ticket filed</span><span class="updsrc" style="margin-left:auto;flex:none">Direct update</span></div>
+        <div class="updrow"><span class="upddate">Jun 09 2026</span><span>Mapping signoff slipped to this week</span><span class="updsrc" style="margin-left:auto;flex:none">1:1 with Maria</span></div>
+      </div>
+
+      <div class="card">
+        <div class="seclabel">Contributing meetings</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="tag"><span class="d dot-atlas"></span>Team weekly</button><button class="tag"><span class="d" style="background:var(--bb4)"></span>1:1 with Maria</button></div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ MEETINGS LIST ============ -->
+<div class="frame screen" id="s-meetings">
+  <div class="app">
+    <nav class="rail">
+      <div class="rail-word">Meeting Assistant</div>
+      <button class="rail-cap"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Capture</button>
+      <div class="rail-nav" data-rail="cockpit">Cockpit</div>
+      <div class="rail-nav active" data-rail="meetings">Meetings</div>
+      <div class="rail-nav" data-rail="projects">Projects</div>
+      <div class="rail-foot"><div class="rail-divider"></div><button class="rail-util">Export</button><button class="rail-util">Import</button></div>
+    </nav>
+    <div class="stage"><div class="pad">
+      <div class="mlhead">
+        <h1 class="h-list">Meetings</h1>
+        <input class="search" placeholder="Search meetings">
+        <button class="btn btn-primary">New meeting</button>
+      </div>
+
+      <div class="card" style="margin-bottom:12px">
+        <div class="mlrow">
+          <div>
+            <div class="mlname">Team weekly</div>
+            <div class="meta" style="font-size:14px;margin-top:5px">Weekly &middot; Cross-team sync and prioritization &middot; Last met Jun 06 &middot; Next Jun 15</div>
+            <div class="meta" style="font-size:13px;margin-top:4px">3 open</div>
+          </div>
+          <button class="btn btn-ghost btn-xs">Brief me</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="mlrow">
+          <div>
+            <div class="mlname">1:1 with Maria</div>
+            <div class="meta" style="font-size:14px;margin-top:5px">Biweekly &middot; Direct report sync &middot; Last met Jun 02 &middot; Next Jun 16</div>
+            <div class="meta" style="font-size:13px;margin-top:4px">2 open</div>
+          </div>
+          <button class="btn btn-ghost btn-xs">Brief me</button>
+        </div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ MEETING DETAIL ============ -->
+<div class="frame screen" id="s-meeting">
+  <div class="app">
+    <nav class="rail">
+      <div class="rail-word">Meeting Assistant</div>
+      <button class="rail-cap"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Capture</button>
+      <div class="rail-nav" data-rail="cockpit">Cockpit</div>
+      <div class="rail-nav active" data-rail="meetings">Meetings</div>
+      <div class="rail-nav" data-rail="projects">Projects</div>
+      <div class="rail-foot"><div class="rail-divider"></div><button class="rail-util">Export</button><button class="rail-util">Import</button></div>
+    </nav>
+    <div class="stage"><div class="pad">
+      <button class="pback"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Meetings / Team weekly</button>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="phead">
+          <div>
+            <h1 class="pname">Team weekly</h1>
+            <div class="meta" style="font-size:13px;margin-top:8px">Weekly &middot; Cross-team sync and prioritization &middot; Next Mon Jun 15 &middot; Priya, Maria, Dana</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-secondary btn-xs">Brief me</button><button class="btn btn-ghost btn-xs">Ask</button><button class="btn btn-ghost btn-xs">Edit</button></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <textarea class="well" style="min-height:84px" placeholder="Paste notes from this meeting"></textarea>
+        <div style="margin-top:12px;text-align:right"><button class="btn btn-primary">Save and analyze</button></div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><div class="seclabel" style="margin:0">Summary</div><button class="btn btn-ghost btn-xs">Regenerate</button></div>
+        <p style="font:400 18px/1.6 var(--sans);color:var(--slate);margin:10px 0 0;max-width:66ch">Cutover sequencing dominated this week. Priya owns the revised migration plan, due before Monday. Dana is confirming the maintenance window. The team agreed to push the Atlas cutover to July 6 given the QA backlog.</p>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><div class="seclabel" style="margin:0">To-dos</div><button class="btn btn-ghost btn-xs">+ Add to-do</button></div>
+        <div class="row" style="border:none;border-radius:0;box-shadow:none;padding:11px 0 0">
+          <div class="rbody">
+            <div class="rtext">Send Priya the Atlas migration cutover plan</div>
+            <div class="qlabel">From your note:</div>
+            <span class="quote">Priya, can you have the cutover plan to me before Monday?</span>
+            <div class="rmeta">
+              <span class="pill pill-iowe">I owe</span>
+              <button class="tag"><span class="d dot-atlas"></span>Atlas migration</button>
+              <span class="confirmed"><span class="ck">&#10003;</span>due Mon Jun 15</span>
+              <span class="rowacts"><button class="btn btn-ghost btn-xs">Done</button><button class="btn btn-ghost btn-xs">Owner</button></span>
+            </div>
+          </div>
+        </div>
+        <div class="completed-exp">Completed (4)</div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><div class="seclabel" style="margin:0">Talking points</div><button class="btn btn-ghost btn-xs">+ Add a talking point</button></div>
+        <div class="tp"><span class="tpcheck"></span><span class="grow">Walk through the rollback checklist before cutover</span><button class="btn btn-ghost btn-xs">Mark discussed</button></div>
+        <div class="tp done"><span class="tpcheck on">&#10003;</span><span class="grow">Confirm QA sign-off owner</span><span class="meta">discussed</span></div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="seclabel">Decisions</div>
+        <div class="row" style="border:none;border-radius:0;box-shadow:none;padding:9px 0 0">
+          <div class="rbody">
+            <div class="rtext">Atlas cutover moved to July 6.</div>
+            <span class="quote">we agreed to push the cutover to the 6th given the QA backlog.</span>
+            <div class="rmeta"><span class="updsrc">logged Jun 11 2026</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="seclabel">Notes</div>
+        <div class="noterow">
+          <div class="notets">Jun 11 2026, 9:32 AM</div>
+          <div class="notetext">Synced with infra. Priya will own the timeline revision, getting it to me by Friday. Still waiting on Maria for budget sign-off. Decided to push staging cutover to after the vendor review.</div>
+          <div class="acts" style="margin-top:6px"><button class="btn btn-ghost btn-xs">View</button><button class="btn btn-ghost btn-xs">Edit</button><button class="btn btn-ghost btn-xs">Delete</button></div>
+        </div>
+      </div>
+
+      <div class="card brief">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div class="seclabel" style="margin:0">Brief me &middot; before Mon Jun 15</div><button class="btn btn-ghost btn-xs">Close</button></div>
+        <h4>Since last time</h4>
+        <p>The cutover was moved to July 6. Two infra dependencies cleared; staging readiness is the open blocker.</p>
+        <h4>Open with you</h4>
+        <p>You owe Priya the revised migration plan (due Monday) and the rollback checklist draft.</p>
+        <h4>Suggested talking points</h4>
+        <p>Walk through the rollback checklist before cutover. Confirm the QA sign-off owner.</p>
+        <h4>Questions to ask</h4>
+        <p>Is the maintenance window confirmed with Dana? Who signs off go/no-go on staging?</p>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ============ EMPTY / FIRST RUN ============ -->
+<div class="frame screen" id="s-empty">
+  <div class="app">
+    <div class="stage" style="max-height:760px">
+      <div class="firstrun">
+        <h1 class="fr-title">Meeting Assistant</h1>
+        <p class="fr-desc">Paste a meeting note, point it at a meeting or project, and the open items, decisions, and follow-ups gather in one place.</p>
+        <p class="fr-limit">The tool proposes items from your notes. You review and confirm each one before it counts. It can be wrong, so review is required.</p>
+        <div class="sample">
+          <div class="sample-h"><span class="dot"></span><span class="t">Try it on a sample note</span></div>
+          <p>A built-in example meeting note is ready. Run it through extraction to watch the tool pull out to-dos and decisions, each with its source quote. Nothing here is saved as your real data.</p>
+          <button class="btn btn-primary">Run the sample note</button>
+        </div>
+        <button class="fr-import">Import data from a previous version</button>
+
+        <div class="divlabel">Other empty states</div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div class="seclabel">Empty cockpit</div>
+          <div class="emptyblock">
+            <div class="t">Your day surfaces here</div>
+            <p>Your open, due-soon, and slipping items appear here once you capture a meeting or project note. Nothing is overdue because nothing is tracked yet.</p>
+            <button class="btn btn-primary">Capture a note</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:14px">
+          <div class="seclabel">All-clear cockpit</div>
+          <div class="allclear"><span class="ck">&#10003;</span>Nothing needs you right now.</div>
+          <div class="meta" style="margin-top:4px">All do-next and slipping items are clear. Due-soon and waiting-for are below.</div>
+        </div>
+
+        <div class="card">
+          <div class="seclabel">No items found in a note</div>
+          <div class="emptyblock">
+            <div class="t">No clear to-dos or decisions in these notes.</div>
+            <p>The note is saved to 1:1 with Maria. You can add items by hand or capture more.</p>
+            <span style="display:flex;gap:8px"><button class="btn btn-secondary">Add a to-do</button><button class="btn btn-ghost">View the note</button></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PHONE ============ -->
+<div class="frame screen" id="s-phone">
+  <div class="phonewrap">
+    <div class="phone">
+      <div class="ptop">Saturday, June 13</div>
+      <div class="pbody">
+        <div class="meta" style="margin-bottom:14px">3 to do next, 1 slipping</div>
+        <div class="focus" style="padding:14px">
+          <div class="eyebrow">Today's focus</div>
+          <p style="font-size:16px">Send Priya the Atlas cutover plan first. The Team weekly meets Monday and needs it to lock the date.</p>
+        </div>
+        <div class="seclabel">Do next</div>
+        <div class="row" style="padding:12px">
+          <span class="rmark"></span>
+          <div class="rbody">
+            <div class="rtext">Send Priya the Atlas cutover plan</div>
+            <span class="quote">have the cutover plan to me before Monday?</span>
+            <div class="rmeta"><span class="pill pill-iowe">I owe</span><button class="tag"><span class="d dot-atlas"></span>Atlas migration</button><span class="age">due Mon Jun 15</span></div>
+          </div>
+        </div>
+        <div class="seclabel" style="margin-top:16px">Slipping</div>
+        <div class="row slip" style="padding:12px">
+          <span class="rmark none"></span>
+          <div class="rbody">
+            <div class="rtext">Priya has waited 9 days for the cutover plan.</div>
+            <div class="rmeta"><span class="pill pill-stale">committed 9 days ago</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="pbar">
+        <div class="ptab active"><svg class="ic pi" width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/></svg>Cockpit</div>
+        <div class="ptab"><svg class="ic pi" width="20" height="20" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Meetings</div>
+        <div class="pcap"><div class="cbtn">+</div><div class="cl">Capture</div></div>
+        <div class="ptab"><svg class="ic pi" width="20" height="20" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4zM3 7v10l9 4 9-4V7"/></svg>Projects</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var rail = {cockpit:'cockpit', verify:'capmode', capture:'capmode', project:'projects'};
+  document.querySelectorAll('.switch button').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('.switch button').forEach(function(x){x.classList.remove('on')});
+      b.classList.add('on');
+      document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+      document.getElementById('s-'+b.dataset.s).classList.add('active');
+      window.scrollTo(0,0);
+    });
+  });
+</script>
+</body>
+</html>

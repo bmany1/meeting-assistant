@@ -1,0 +1,11 @@
+# Normalize line endings: store LF in the repo, check out native per-OS.
+# Keeps the artifact and dev harness consistent across Windows/macOS/Linux contributors.
+* text=auto
+
+# Explicitly text (avoids any heuristic misclassification)
+*.tsx   text
+*.ts    text
+*.json  text
+*.md    text
+*.html  text
+*.css   text

@@ -1,0 +1,32 @@
+# Claude Code session/agent config (local only)
+.claude/
+
+# Dev harness (local-only; never shipped into the artifact)
+node_modules/
+dev/dist/
+dist/
+*.local
+
+# Secrets / environment (must never be committed)
+.env
+.env.*
+*.pem
+*.key
+.npmrc
+
+# Build / test output
+coverage/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

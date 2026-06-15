@@ -1,8 +1,8 @@
 # Meeting Assistant 
 
-▐▛███▜▌
-▜█████▛▘
-▘▘ ▝▝
+▐▛███▜▌  
+▜█████▛▘  
+▘▘ ▝▝  
 
 Turn a pile of messy meeting notes into a verified, ranked list of what to actually do next. Runs entirely inside a Claude chat. No app to install, no account to make, no server, no API key.
 

@@ -4,7 +4,7 @@
 ▜█████▛▘  
 ▘▘ ▝▝  
 
-Turn a pile of messy meeting notes into a verified, ranked list of what to actually do next. Runs entirely inside a Claude chat. No app to install, no account to make, no server, no API key.
+Turn a pile of messy meeting notes into a verified, ranked list of what to actually do next. Runs entirely inside a Claude chat. No need for Claude Code or Cowork, no app to install, no account to make, no server, no API key.
 
 ## Why this exists
 
@@ -32,9 +32,10 @@ And it stays calm about all of it. When something's overdue or slipping, it tell
 
 The app ships as one file: `meeting-assistant.tsx`. Here's how you turn it into your tool:
 
-1. Open `meeting-assistant.tsx` and copy everything in it.
-2. Start a new chat in [claude.ai](https://claude.ai), paste it in, and let it render as an artifact.
-3. Turn on the artifact's AI capability, then hit Share to get a link you can bookmark.
+1. Download the `meeting-assistant.tsx` file from this repo.
+2. Start a new chat in [claude.ai](https://claude.ai).
+3. Drop the `meeting-assistant.tsx` file into the chat, then prompt the chat to render the attached TSX code as an artifact.
+4. Turn on the artifact's AI capability, then hit Share to get a link you can bookmark.
 
 That bookmarked link is your app from here on out.
 

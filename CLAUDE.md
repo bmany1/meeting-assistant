@@ -305,9 +305,38 @@ Build and keep all of this working (full detail in spec):
   escalation back-off curve, cockpit ranking weights, and the design-pass **provisional component
   values** (radius/spacing/elevation, picker-degrade threshold). Also probe burst-write rate limits at
   that first paste-in. <!-- Updated 2026-06-13: + design-provisional component values, ranking weights -->
+- **Post-testing feedback cycle (2026-06-20):** first hands-on testing of the built artifact surfaced two
+  feedback items, run through ideate → brainstorm → plan. Ideation:
+  `docs/ideation/2026-06-20-cadence-and-meeting-date-ideation.html` (7 ranked ideas across 5 axes for
+  (1) richer meeting cadence — Daily + Outlook-style Custom weekday recurrence — and (2) backfilling a
+  past meeting date instead of assuming pasted-today = met-today). Keystone finding: the staleness clock
+  reads `last_touched` (set to ingestion `now` at every write site), not `source.date`, so dating a note is
+  cosmetic unless `last_touched` is also seeded from the meeting date. **Meeting-date backfill** was chosen
+  first and taken to a plan:
+  - Requirements: `docs/brainstorms/2026-06-20-meeting-date-backfill-requirements.md` — manual-entry-first
+    (AI date inference deferred), event-time aging, age-honestly (no grace window), reuses existing fields
+    so **no schema bump / no migration**.
+  - Plan: `docs/plans/2026-06-20-001-feat-meeting-date-backfill-plan.md` (Standard, 4 units U1-U4; headless
+    `ce-doc-review` applied 6 fixes — `last_meeting_date` write via `updateMeeting`, future-date reject with
+    inline error, date-control label/hint, `ScopedCapture` inline layout, R8 wiring test, deferral rationale).
+  - **Build completed (2026-06-20)** on branch `feat/meeting-date-backfill` via `ce-work`, all 4 units test-first
+    where load-bearing: U1 seeds `last_touched` from the event date in `proposalToItem` (created_at stays the
+    ingestion instant) + optional note timestamp; U2 threads the chosen date through `captureAndAnalyze`
+    (local-noon `fromDateInput`, `ctx.today` anchor for R8, `latestMeetingDate` max-wins for R9, future-date
+    backstop); U3 adds the date control to both `CaptureSurface` (labelled Field) and `ScopedCapture` (inline)
+    with on-save future rejection; U4 makes `fmtDate` year-aware. No schema bump / no migration (KTD5, reuses
+    `note.timestamp`/`source.date`/`last_touched`/`last_meeting_date`). New pure helpers
+    `fromDateInput`/`todayDateInput`/`isFutureDateInput`/`latestMeetingDate` are unit-tested; **143 tests green**
+    (was 121; +22 across dates/format/verify-merge/smoke), Vite build clean. Also de-time-bombed a pre-existing
+    `smoke.test.ts` cockpit fixture (hardcoded `last_touched` had aged past the Weekly window). R8 (AI relative-due
+    anchoring) is wired + unit-tested but its AI behavior is verifiable only in the artifact (keyless call). **Not
+    yet pasted into claude.ai.** Follow-up (per plan Scope Boundaries): route the setup-modal/due-date inputs
+    through `fromDateInput` to clear the same latent UTC-midnight off-by-one (confirmed live at review, deferred).
+  - **Cadence options** (Daily + Custom weekday picker, ideation ideas 3-5) remain **queued** — own
+    brainstorm/plan pending. <!-- Updated 2026-06-20: date-backfill BUILT (U1-U4, 143 tests green); cadence queued -->
 - **Open follow-ups:** whether ranking/threshold tuning becomes a named task; whether U9's cockpit
   rendering can truly parallel the design pass; optional re-run of the truncated research
   verification phase; edit/accept/dismiss-rate counters in `app:meta` as an extraction-trust metric
   (cheap add, pairs with the dismiss reasons that shipped in the plan). <!-- Added 2026-06-12 -->
 
-<!-- Updated 2026-06-12: status synced after deep research + two-round plan review -->
+<!-- Updated 2026-06-20: status synced after post-testing feedback ideate -> brainstorm -> plan cycle (date-backfill planned, cadence queued) -->

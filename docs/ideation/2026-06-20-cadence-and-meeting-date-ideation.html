@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ideation: Cadence options and meeting-date backfill</title>
+<style>
+  :root{
+    --indigo:#2C2A4A; --indigo2:#423D6E; --indigo3:#645CA0; --indigo6:#C6C2E0;
+    --amber:#F2853C;
+    --ink:#25262B; --sec:#706C82; --med:#7F8186;
+    --blue:#2F77E0; --red:#D32F2F;
+    --bg:#FBFAF8; --card:#FFFFFF; --line:#E7E4DD; --soft:#F3F1EC;
+    --indigo-soft:#ECEAF4; --blue-soft:#E8F0FC; --slate-soft:#EFEDE8; --amber-soft:#FBEBDD; --plum-soft:#F0EAF1;
+    --sans:-apple-system,"Segoe UI",Roboto,system-ui,sans-serif;
+    --serif:"Aptos Serif",Georgia,"Times New Roman",serif;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); font-size:16px; line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:880px; margin-inline:auto; padding:48px 24px 72px}
+  p,li{max-width:72ch}
+  a{color:var(--indigo);text-underline-offset:2px}
+  a:hover{color:var(--indigo2)}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.88em;
+    background:var(--soft); padding:.08em .35em; border-radius:4px; color:#3B3A47}
+  h1,h2,h3{font-family:var(--serif); font-weight:600; line-height:1.18; color:var(--indigo)}
+  .eyebrow{font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--sec); margin:0 0 10px}
+  h1{font-size:34px; margin:0 0 14px; letter-spacing:-.01em}
+  .meta{font-size:13.5px; color:var(--sec); margin:0 0 22px}
+  .meta b{color:var(--ink); font-weight:600}
+  .lede{font-size:18px; line-height:1.55; color:#34333D; border-left:3px solid var(--indigo6);
+    padding:2px 0 2px 18px; margin:22px 0 26px}
+  .lede .key{color:var(--indigo); font-weight:600}
+  .stats{display:flex; flex-wrap:wrap; gap:10px; margin:0 0 34px}
+  .stat{background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px 14px; min-width:96px}
+  .stat .n{font-family:var(--serif); font-size:23px; color:var(--indigo); font-weight:600; line-height:1}
+  .stat .l{font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--sec); margin-top:5px}
+  section{margin:42px 0 0}
+  h2{font-size:23px; margin:0 0 6px; padding-top:8px}
+  .h2note{font-size:13.5px; color:var(--sec); margin:0 0 18px}
+  .ground{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:6px 22px}
+  .ground h3{font-size:15px; margin:20px 0 6px; color:var(--ink); font-family:var(--sans);
+    font-weight:700; letter-spacing:.01em}
+  .ground p{font-size:14.5px; margin:6px 0 16px; color:#3A3944}
+  .axes{list-style:none; padding:0; margin:0; counter-reset:ax}
+  .axes li{position:relative; padding:13px 16px 13px 52px; border:1px solid var(--line);
+    border-radius:9px; background:var(--card); margin-bottom:9px; font-size:14.5px; max-width:none}
+  .axes li::before{counter-increment:ax; content:counter(ax); position:absolute; left:14px; top:50%;
+    transform:translateY(-50%); width:26px; height:26px; border-radius:7px; background:var(--indigo-soft);
+    color:var(--indigo); font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center}
+  .axes b{color:var(--ink)}
+  /* synthesis callout */
+  .synth{background:var(--indigo); color:#EDEBF5; border-radius:12px; padding:22px 24px; margin:22px 0 0}
+  .synth h3{color:#fff; font-family:var(--serif); font-size:18px; margin:0 0 10px}
+  .synth p{color:#D9D6E8; font-size:14.5px; margin:9px 0; max-width:none}
+  .synth .order{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:14px 0 4px}
+  .synth .step{background:#3A3760; border:1px solid #4B477A; color:#EAE8F4; border-radius:7px;
+    padding:6px 11px; font-size:13px; font-weight:600}
+  .synth .arr{color:var(--indigo3); font-weight:700}
+  .synth .amberword{color:var(--amber); font-weight:700}
+  /* jump list */
+  .jump{list-style:none; padding:0; margin:0 0 26px; display:grid; gap:6px}
+  .jump a{display:flex; gap:10px; padding:9px 13px; border:1px solid var(--line); border-radius:8px;
+    background:var(--card); text-decoration:none; color:var(--ink); font-size:14px}
+  .jump a:hover{border-color:var(--indigo3); background:#fff}
+  .jump .jn{color:var(--indigo); font-weight:700; font-family:var(--serif)}
+  .jump .ja{margin-left:auto; font-size:11.5px; color:var(--sec); text-transform:uppercase; letter-spacing:.05em;
+    align-self:center}
+  /* idea cards */
+  .idea{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:24px 24px 20px;
+    margin:0 0 20px; scroll-margin-top:16px}
+  .idea.keystone{border-color:var(--amber); box-shadow:0 0 0 1px var(--amber-soft)}
+  .idea-head{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:4px}
+  .idea-n{font-family:var(--serif); font-size:22px; font-weight:600; color:var(--indigo); line-height:1}
+  .idea h3{font-size:20px; margin:0; flex:1 1 60%; line-height:1.25}
+  .keymark{font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+    color:#B5611E; background:var(--amber-soft); padding:3px 9px; border-radius:20px; align-self:center}
+  .chips{display:flex; flex-wrap:wrap; gap:7px; margin:12px 0 16px}
+  .chip{font-size:11.5px; font-weight:600; border-radius:20px; padding:4px 11px; letter-spacing:.02em;
+    border:1px solid transparent; white-space:nowrap}
+  .chip .ck{opacity:.62; font-weight:600}
+  .chip.axis{background:var(--plum-soft); color:#5E4A66}
+  .chip.conf{background:var(--indigo-soft); color:var(--indigo)}
+  .chip.cx{background:var(--slate-soft); color:#54525C}
+  .idea p{font-size:15px; margin:11px 0; line-height:1.6}
+  .field{margin:13px 0}
+  .field .fl{font-size:11.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--sec); display:block; margin-bottom:3px}
+  .field p{margin:0}
+  .basis{font-size:14px; color:#3A3944}
+  .btag{display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+    padding:2px 7px; border-radius:5px; margin-right:6px; vertical-align:1px}
+  .btag.direct{background:var(--indigo-soft); color:var(--indigo)}
+  .btag.external{background:var(--blue-soft); color:#1F5BB5}
+  .btag.reasoned{background:var(--slate-soft); color:#54525C}
+  .down{font-size:14px; color:#4A4954; background:var(--soft); border-radius:8px; padding:11px 14px}
+  figure{margin:18px 0; padding:0}
+  figure svg{display:block; width:100%; height:auto; background:#fff; border:1px solid var(--line); border-radius:10px}
+  figcaption{font-size:12.5px; color:var(--sec); margin-top:7px; text-align:center}
+  .twocol{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0}
+  .twocol .col{border:1px solid var(--line); border-radius:9px; padding:13px 15px; background:#fff}
+  .twocol .col h4{margin:0 0 6px; font-size:13.5px; font-family:var(--sans); color:var(--indigo); font-weight:700}
+  .twocol .col p{font-size:13.5px; margin:5px 0; color:#3F3E49}
+  .twocol .col.ai{background:var(--soft)}
+  /* table */
+  table{width:100%; border-collapse:collapse; font-size:14px; margin-top:6px}
+  th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{font-size:11.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--sec); font-weight:700}
+  td:first-child{font-weight:600; color:var(--ink); white-space:nowrap}
+  td.reason{color:#45444F}
+  footer{margin:48px 0 0; padding-top:18px; border-top:1px solid var(--line);
+    font-size:12.5px; color:var(--med)}
+  footer code{font-size:12px}
+  @media (max-width:620px){
+    .wrap{padding:32px 16px 56px} h1{font-size:28px}
+    .twocol{grid-template-columns:1fr}
+    .idea h3{flex-basis:100%}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Compound Engineering · Ideation</p>
+  <h1>Cadence options and meeting-date backfill</h1>
+  <p class="meta">
+    <b>Date</b> 2026-06-20 &nbsp;·&nbsp; <b>Topic</b> cadence-and-meeting-date &nbsp;·&nbsp;
+    <b>Mode</b> repo-grounded &nbsp;·&nbsp; <b>Focus</b> two post-testing feedback items on <code>meeting-assistant.tsx</code>
+  </p>
+
+  <p class="lede">
+    Two pieces of feedback &mdash; "let me pick a daily / custom-weekday cadence" and "stop assuming a note
+    pasted today means the meeting happened today" &mdash; turn out to touch the same machinery and form one
+    small, coherent system. The load-bearing, non-obvious finding:
+    <span class="key">capturing a meeting date does nothing on its own.</span> The follow-through engine ages
+    every commitment off <code>last_touched</code> (ingestion time), never the provenance date &mdash; so a
+    date feature that only relabels provenance is cosmetic. The keystone is re-anchoring that clock.
+  </p>
+
+  <div class="stats">
+    <div class="stat"><div class="n">7</div><div class="l">Ranked ideas</div></div>
+    <div class="stat"><div class="n">27</div><div class="l">Raw candidates</div></div>
+    <div class="stat"><div class="n">9</div><div class="l">Cut / folded</div></div>
+    <div class="stat"><div class="n">5</div><div class="l">Axes covered</div></div>
+    <div class="stat"><div class="n">5</div><div class="l">Frames</div></div>
+  </div>
+
+  <section>
+    <h2>Grounding Context</h2>
+    <p class="h2note">Codebase machinery (verified by a code scout against <code>meeting-assistant.tsx</code>) plus external prior art.</p>
+    <div class="ground">
+      <h3>Cadence is load-bearing, not a label</h3>
+      <p><code>type Cadence</code> is a bare string union (<code>:332</code>) of Weekly/Biweekly/Monthly/Ad&nbsp;hoc &mdash;
+        no Daily, no Custom. It is used as a key into <code>CADENCE_DAYS</code> (<code>:110</code>) at the one
+        load-bearing site (<code>:620</code>): <code>interval_days = CADENCE_DAYS[cadence] ?? DEFAULT_STALE_DAYS</code>.
+        That <code>interval_days</code> is the staleness threshold for the whole follow-through engine. An unknown
+        key falls back to 14 days <em>silently</em>. Cadence is also string-interpolated into the LLM extraction
+        prompt (<code>:1143</code>) and rendered directly as a React child (<code>:3613</code>, <code>:3987</code>).</p>
+      <h3>The "assumes today" problem lives in three places</h3>
+      <p>Note <code>timestamp = nowISO()</code> (<code>:1027</code>); item provenance <code>source.date = nowISO()</code>
+        (<code>:1933/:1937</code>); and the extraction anchor <code>ctx.today</code> (<code>:1950</code>) that the
+        model uses to resolve "by Friday" into a calendar date (<code>:1159</code>). <code>last_meeting_date</code>
+        (<code>:393</code>) is dead/vestigial &mdash; set null at creation and never written again.</p>
+      <h3>The critical decoupling</h3>
+      <p>The staleness clock reads <code>last_touched</code> (<code>:464</code>), <strong>not</strong>
+        <code>source.date</code> (which is provenance-display only). <code>last_touched</code> is set to ingestion
+        <code>now</code> at every write site (<code>:1390</code>, <code>:1437/:1444</code>, <code>:2090</code>,
+        <code>:2167</code>, <code>:2191</code>). <code>isUntouchedStale</code> (<code>:1524&ndash;1527</code>) is the
+        only consumer of <code>interval_days</code>. So backfilling a date changes labels only unless
+        <code>last_touched</code> is also seeded from it.</p>
+      <h3>Migration is a silent-failure seam</h3>
+      <p><code>SCHEMA_VERSION = 2</code> (<code>:89</code>); <code>normalizeImport</code> (<code>:1789</code>) spreads
+        meetings verbatim and <code>validateImportStructure</code> (<code>:1738</code>) checks only id/name, so cadence
+        shape is never normalized or validated. <code>fmtDate</code> (<code>:2888</code>) renders month+day with no
+        year. There is no guard against a future-dated value.</p>
+      <h3>External prior art</h3>
+      <p>The minimal recurrence model is the RRULE subset <code>{freq, interval, byweekday}</code> &mdash; ~15 lines of
+        native JS, no library (RFC&nbsp;5545; Google Calendar's custom dialog exposes exactly these three fields).
+        AI extraction of explicit dates runs ~84&ndash;90% accurate when anchored to a known "today." Event-time vs
+        ingestion-time is a settled question: anchor aging to the event (meeting) date, fall back to ingestion only
+        when no date is known (Confluent/Kafka watermarks; Obsidian Tasks anchors overdue to due-date; Apple EventKit
+        conflating the two is a documented anti-pattern). The "Intent Preview" pattern (propose &rarr; approve/edit/skip
+        with the source snippet) is already the app's verification-screen idiom.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Topic Axes</h2>
+    <p class="h2note">The surface these ideas were generated and spread across.</p>
+    <ul class="axes">
+      <li><b>Cadence representation</b> &mdash; how recurrence is typed and stored; Daily vs structured Custom; how <code>interval_days</code> is derived.</li>
+      <li><b>Cadence editor UX</b> &mdash; capturing interval + weekdays in a no-<code>&lt;form&gt;</code>, select-based picker.</li>
+      <li><b>Date capture</b> &mdash; manual override vs AI inference from note text, and the confirm flow.</li>
+      <li><b>Staleness-engine coupling</b> &mdash; event-time vs ingestion-time; whether a backfilled date seeds <code>last_touched</code>, overdue, and the cockpit.</li>
+      <li><b>Migration &amp; data integrity</b> &mdash; schema bump, legacy-cadence normalization on import, year-ambiguous dates, future-date guards.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>How these fit together</h2>
+    <p class="h2note">The run's headline: convergence, not a feature menu. There is a build order and one sequencing trap.</p>
+    <div class="synth">
+      <h3>One compound, one trap</h3>
+      <p><span class="amberword">The compound (5 of 5 frames found it):</span> date capture (idea 2) and event-time
+        staleness (idea 1) must ship together. Capture a date without re-anchoring <code>last_touched</code> and the
+        feature looks done but does nothing; re-anchor without capturing a date and there is nothing to anchor to.</p>
+      <p><span class="amberword">The trap (surfaced in verification):</span> <code>saveRawNote</code> stamps the date at
+        save-time, but an AI-inferred date isn't confirmed until the verification screen, <em>after</em> the save that
+        the "save-before-analyze" rule (R3) deliberately does first. So a manual date set at capture-time is clean,
+        while an AI-inferred date needs a post-accept patch that rewrites <code>source.date</code> + <code>last_touched</code>
+        on the accepted items. This is the load-bearing implementation detail and an open question for brainstorm.</p>
+      <div class="order">
+        <span class="step">1 · Event-time clock</span><span class="arr">+</span>
+        <span class="step">2 · Capture the date</span><span class="arr">&rarr;</span>
+        <span class="step">3 · Daily + Custom</span><span class="arr">+</span>
+        <span class="step">4 · Window tuning</span><span class="arr">+</span>
+        <span class="step">5 · Picker</span><span class="arr">&rarr;</span>
+        <span class="step">6 · Migration</span><span class="arr">&rarr;</span>
+        <span class="step">7 · Infer cadence</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Ranked Ideas</h2>
+    <p class="h2note">Seven survivors, spread across all five axes. Confidence and complexity are first-cut estimates.</p>
+    <ul class="jump">
+      <li><a href="#i1"><span class="jn">1</span> Event-time staleness &mdash; anchor the clock to the meeting date <span class="ja">keystone · staleness</span></a></li>
+      <li><a href="#i2"><span class="jn">2</span> One meeting-date, two inputs (manual + AI) <span class="ja">date capture</span></a></li>
+      <li><a href="#i3"><span class="jn">3</span> Add "Daily" now; structure cadence for Custom <span class="ja">cadence rep</span></a></li>
+      <li><a href="#i4"><span class="jn">4</span> Staleness window for short / multi-day cadences <span class="ja">cadence rep</span></a></li>
+      <li><a href="#i5"><span class="jn">5</span> Custom recurrence picker with live preview <span class="ja">editor UX</span></a></li>
+      <li><a href="#i6"><span class="jn">6</span> Migration &amp; integrity bundle <span class="ja">migration</span></a></li>
+      <li><a href="#i7"><span class="jn">7</span> Infer cadence from meeting-date history <span class="ja">editor UX · swing</span></a></li>
+    </ul>
+
+    <!-- IDEA 1 -->
+    <article class="idea keystone" id="i1">
+      <div class="idea-head">
+        <span class="idea-n">1.</span>
+        <h3>Event-time staleness &mdash; anchor the aging clock to the meeting date</h3>
+        <span class="keymark">Keystone</span>
+      </div>
+      <div class="chips">
+        <span class="chip axis"><span class="ck">axis</span> Staleness coupling</span>
+        <span class="chip conf"><span class="ck">conf</span> 90% · High</span>
+        <span class="chip cx"><span class="ck">cx</span> Medium</span>
+      </div>
+      <p><strong>Description.</strong> Today every commitment's staleness clock (<code>last_touched</code>) starts the
+        moment notes are pasted, not when the meeting happened. Seed <code>last_touched</code> &mdash; and the provenance
+        <code>source.date</code> &mdash; from the confirmed meeting date, falling back to ingestion time only when no date
+        is known. No new field is needed: <code>source.date</code> already plays the event-date role and
+        <code>created_at</code>/<code>note.timestamp</code> already preserve the ingestion instant for audit.</p>
+
+      <figure>
+        <svg viewBox="0 0 760 232" role="img" aria-label="Two timelines comparing ingestion-time and event-time staleness anchoring">
+          <style>
+            .tl-ax{stroke:#D8D5CE;stroke-width:2}
+            .tl-t{font-family:-apple-system,Segoe UI,sans-serif;font-size:12px;fill:#54525C}
+            .tl-h{font-family:Georgia,serif;font-size:13px;font-weight:600}
+            .tl-day{font-family:-apple-system,Segoe UI,sans-serif;font-size:11px;fill:#7F8186}
+            .halo{paint-order:stroke;stroke:#fff;stroke-width:3.5px}
+          </style>
+          <!-- row 1: ingestion -->
+          <text x="20" y="30" class="tl-h" fill="#7F8186">Today: clock starts at ingestion</text>
+          <line x1="120" y1="64" x2="540" y2="64" class="tl-ax"/>
+          <!-- ticks Mon..Wed -->
+          <g>
+            <circle cx="160" cy="64" r="5" fill="#645CA0"/><text x="160" y="86" text-anchor="middle" class="tl-day">Mon</text>
+            <text x="160" y="50" text-anchor="middle" class="tl-t halo">meeting</text>
+            <circle cx="380" cy="64" r="6" fill="#2C2A4A"/><text x="380" y="86" text-anchor="middle" class="tl-day">Wed</text>
+            <text x="380" y="50" text-anchor="middle" class="tl-t halo">notes pasted</text>
+          </g>
+          <!-- clock starts at Wed -->
+          <line x1="380" y1="64" x2="540" y2="64" stroke="#D32F2F" stroke-width="3" stroke-dasharray="2 5"/>
+          <text x="556" y="68" class="tl-t" fill="#B23434">looks "fresh"</text>
+          <!-- row 2: event time -->
+          <text x="20" y="150" class="tl-h" fill="#2C2A4A">Proposed: clock starts at the meeting</text>
+          <line x1="120" y1="184" x2="540" y2="184" class="tl-ax"/>
+          <g>
+            <circle cx="160" cy="184" r="6" fill="#2C2A4A"/><text x="160" y="206" text-anchor="middle" class="tl-day">Mon</text>
+            <text x="160" y="170" text-anchor="middle" class="tl-t halo">meeting</text>
+            <circle cx="380" cy="184" r="5" fill="#645CA0"/><text x="380" y="206" text-anchor="middle" class="tl-day">Wed</text>
+            <text x="380" y="170" text-anchor="middle" class="tl-t halo">notes pasted</text>
+          </g>
+          <line x1="160" y1="184" x2="380" y2="184" stroke="#F2853C" stroke-width="3"/>
+          <text x="556" y="188" class="tl-t" fill="#B5611E">already 2 days aged</text>
+        </svg>
+        <figcaption>Same facts, two anchors. Ingestion-time hides a two-day-old commitment; event-time ages it honestly.</figcaption>
+      </figure>
+
+      <div class="field"><span class="fl">Basis</span><p class="basis">
+        <span class="btag direct">direct</span><code>last_touched</code> is set to <code>nowISO()</code> at every write site
+        (<code>:1390</code>, <code>:1437/:1444</code>, <code>:2090</code>, <code>:2167</code>, <code>:2191</code>) and
+        <code>isUntouchedStale</code> (<code>:1524&ndash;1527</code>) reads only <code>last_touched</code>, never
+        <code>source.date</code>.
+        <span class="btag external">external</span>event-time vs ingestion-time is settled in stream processing
+        (Confluent/Kafka watermarks); Obsidian Tasks anchors overdue to due-date not created-date; EventKit conflating
+        the two is a documented anti-pattern.</p></div>
+      <div class="field"><span class="fl">Rationale</span><p>The one change that makes backfill behaviorally real.
+        Without it, every other date idea is cosmetic. Five of five ideation frames converged here independently.</p></div>
+      <div class="field"><span class="fl">Downsides</span><p class="down">Inherits the write-ordering trap (see "How these
+        fit together"): the AI path needs a post-accept patch of <code>source.date</code> + <code>last_touched</code>.
+        Backfilled items may surface as stale the instant they're accepted &mdash; usually correct, but a UX call. Pair with
+        the future-date guard (idea 6).</p></div>
+    </article>
+
+    <!-- IDEA 2 -->
+    <article class="idea" id="i2">
+      <div class="idea-head">
+        <span class="idea-n">2.</span>
+        <h3>One meeting-date, two inputs &mdash; manual at capture, AI-inferred at verify</h3>
+      </div>
+      <div class="chips">
+        <span class="chip axis"><span class="ck">axis</span> Date capture</span>
+        <span class="chip conf"><span class="ck">conf</span> 80% · High</span>
+        <span class="chip cx"><span class="ck">cx</span> Medium</span>
+      </div>
+      <p><strong>Description.</strong> Model the meeting date as a single confirmed value with two ways to set it, differing
+        only by a provenance flag (<code>manual | inferred | default</code>). The same call's relative-date anchor
+        (<code>ctx.today</code>) should point at the confirmed date so "by Friday" resolves to the right week.</p>
+      <div class="twocol">
+        <div class="col">
+          <h4>Manual &mdash; at capture</h4>
+          <p>Optional date field on the capture screen, defaults to today. Zero extra taps for real-time notes; one tap to
+            backfill. Set before save &mdash; clean ordering, no patch needed.</p>
+        </div>
+        <div class="col ai">
+          <h4>AI-inferred &mdash; at verify</h4>
+          <p>Extraction returns one extra field <code>{meeting_date, confidence, source_snippet}</code> (no second call),
+            confirmed on the existing verification screen. Low-confidence or absent &rarr; silent fall back to today.</p>
+        </div>
+      </div>
+      <div class="field"><span class="fl">Basis</span><p class="basis">
+        <span class="btag direct">direct</span>the extraction prompt already receives <code>ctx.today</code>
+        (<code>:1159</code>) and returns per-item <code>due_date</code>, so one extra scalar is ~15 tokens of the 1000-token
+        budget; <code>source.date = nowISO()</code> (<code>:1933/:1937</code>) is the single origin to replace; the
+        verification/confirm screen already exists.
+        <span class="btag external">external</span>GPT-class models hit ~84&ndash;90% on explicit dates when anchored to a
+        "today"; the "Intent Preview" pattern is exactly the app's verification idiom.</p></div>
+      <div class="field"><span class="fl">Rationale</span><p>Covers Bryan's "AND/OR" with one field and one downstream code
+        path &mdash; the manual picker doubles as the correction for a wrong inference. Reusing the verification screen adds
+        no surface and keeps the trust model: a date the engine ages from is human-confirmed, never silently inferred.</p></div>
+      <div class="field"><span class="fl">Downsides</span><p class="down">The AI path lands after save, so it needs idea 1's
+        post-accept patch (the manual-at-capture path avoids this). AI inference can't be tested locally. Optional lighter
+        variant: a ~20-line native-<code>Date</code> regex for explicit formats (<code>2026-06-18</code>, <code>6/18</code>,
+        <code>Jun 18</code>) handles the common case with zero tokens and is unit-testable in the dev harness &mdash; but it
+        adds code surface and the AI works in production, so it is an option, not a requirement.</p></div>
+    </article>
+
+    <!-- IDEA 3 -->
+    <article class="idea" id="i3">
+      <div class="idea-head">
+        <span class="idea-n">3.</span>
+        <h3>Add "Daily" now; structure cadence as <code>{freq, interval, byweekday}</code> for Custom</h3>
+      </div>
+      <div class="chips">
+        <span class="chip axis"><span class="ck">axis</span> Cadence representation</span>
+        <span class="chip conf"><span class="ck">conf</span> ~75% · High (Daily) / Med (Custom)</span>
+        <span class="chip cx"><span class="ck">cx</span> Low &rarr; Medium</span>
+      </div>
+      <p><strong>Description.</strong> Two points on one spectrum. <em>Floor:</em> add "Daily" with three additive edits
+        (<code>Cadence</code> union <code>:332</code>, <code>CADENCE_DAYS</code> <code>:110</code>, <code>CADENCES</code>
+        <code>:3499</code>) &mdash; no schema bump, since <code>interval_days</code> is derived at ledger-build
+        (<code>:620</code>), not stored. <em>Complete:</em> to satisfy the Outlook-style Custom ask (frequency + specific
+        weekdays), widen <code>Cadence</code> from a bare string into a small structured value
+        <code>{freq:"DAILY"|"WEEKLY", interval, byweekday[]}</code> and derive <code>interval_days</code> from it. Presets
+        become sugar over the same shape.</p>
+      <div class="field"><span class="fl">Basis</span><p class="basis">
+        <span class="btag direct">direct</span><code>type Cadence</code> is a bare string union (<code>:332</code>) used as
+        a <code>CADENCE_DAYS</code> key (<code>:620</code>, silent 14-day fallback), string-interpolated into the LLM prompt
+        (<code>:1143</code>) and rendered as a React child (<code>:3613</code>, <code>:3987</code>) &mdash; so a structured
+        value needs a <code>cadenceLabel()</code> formatter at those sites or it prints <code>[object Object]</code>.
+        <span class="btag external">external</span>the RRULE subset FREQ/INTERVAL/BYDAY is the minimal model (RFC&nbsp;5545;
+        Google Calendar), ~15 lines of native JS.</p></div>
+      <div class="field"><span class="fl">Rationale</span><p>"Daily" alone is a genuine half-day v1 that unblocks the common
+        standup case immediately. But Custom-by-weekday is explicitly what was asked, and a string enum can't express it
+        without becoming structured somewhere. Doing the object once makes Daily, every-weekday, and Mon/Wed/Fri all fall
+        out of one representation &mdash; and later powers a next-meeting scheduler and the dead <code>last_meeting_date</code> field.</p></div>
+      <div class="field"><span class="fl">Downsides</span><p class="down">The string&rarr;object change is the heaviest lift
+        in this set: it ripples to every interpolation/render site and forces the schema bump + import normalization (idea 6).
+        Verification flagged the object as premature complexity (no scheduler or ICS export exists yet) &mdash; a fair YAGNI
+        caution: if Custom is deferred, ship "Daily" alone and skip the upheaval. A compact string encoding (<code>"W:1,3,5"</code>)
+        is a lighter middle path but harder to validate and migrate than a typed object.</p></div>
+    </article>
+
+    <!-- IDEA 4 -->
+    <article class="idea" id="i4">
+      <div class="idea-head">
+        <span class="idea-n">4.</span>
+        <h3>Make staleness correct for short and multi-day cadences</h3>
+      </div>
+      <div class="chips">
+        <span class="chip axis"><span class="ck">axis</span> Cadence representation</span>
+        <span class="chip conf"><span class="ck">conf</span> 75% · Med-High</span>
+        <span class="chip cx"><span class="ck">cx</span> Low-Medium</span>
+      </div>
+      <p><strong>Description.</strong> Two coupled tunings so richer cadence doesn't break the cockpit. <em>(a) Density-derived
+        interval:</em> for a Custom weekday set, derive <code>interval_days</code> from the largest gap between selected days
+        (Mon/Wed/Fri &rarr; 3, not 7), because the engine treats <code>interval_days</code> as a literal "go stale after N
+        silent days" deadline. <em>(b) A per-cadence quiescence floor</em> so a Daily meeting (interval 1) doesn't nag the
+        morning after every silent day and train the user to ignore the cockpit.</p>
+
+      <figure>
+        <svg viewBox="0 0 760 150" role="img" aria-label="Week strip showing Mon Wed Fri with the largest gap of three days">
+          <style>
+            .wk{font-family:-apple-system,Segoe UI,sans-serif;font-size:13px;fill:#54525C}
+            .wksel{fill:#2C2A4A}.wkoff{fill:#CFCBC2}
+            .wlbl{font-family:Georgia,serif;font-size:12px}
+            .halo2{paint-order:stroke;stroke:#fff;stroke-width:3.5px}
+          </style>
+          <!-- 7 day cells -->
+          <g>
+            <!-- positions -->
+            <g><circle cx="80"  cy="60" r="20" class="wkoff"/><text x="80"  y="65" text-anchor="middle" class="wk" fill="#fff">Su</text></g>
+            <g><circle cx="180" cy="60" r="20" class="wksel"/><text x="180" y="65" text-anchor="middle" class="wk" fill="#fff">Mo</text></g>
+            <g><circle cx="280" cy="60" r="20" class="wkoff"/><text x="280" y="65" text-anchor="middle" class="wk" fill="#fff">Tu</text></g>
+            <g><circle cx="380" cy="60" r="20" class="wksel"/><text x="380" y="65" text-anchor="middle" class="wk" fill="#fff">We</text></g>
+            <g><circle cx="480" cy="60" r="20" class="wkoff"/><text x="480" y="65" text-anchor="middle" class="wk" fill="#fff">Th</text></g>
+            <g><circle cx="580" cy="60" r="20" class="wksel"/><text x="580" y="65" text-anchor="middle" class="wk" fill="#fff">Fr</text></g>
+            <g><circle cx="680" cy="60" r="20" class="wkoff"/><text x="680" y="65" text-anchor="middle" class="wk" fill="#fff">Sa</text></g>
+          </g>
+          <!-- gap arc Fri -> Mon (wrap) = 3 days, the max -->
+          <path d="M580 88 Q580 128 480 128 L280 128 Q180 128 180 88" fill="none" stroke="#F2853C" stroke-width="2.5"/>
+          <text x="380" y="124" text-anchor="middle" class="wlbl halo2" fill="#B5611E">largest gap = 3 days &rarr; interval_days</text>
+          <text x="80" y="112" text-anchor="middle" class="wlbl" fill="#9A9DA3">naive map would say 7</text>
+        </svg>
+        <figcaption>Mon/Wed/Fri: the meeting recurs within 3 days, so it should age in ~3 &mdash; not the 7 a frequency-only mapping gives.</figcaption>
+      </figure>
+
+      <div class="field"><span class="fl">Basis</span><p class="basis">
+        <span class="btag direct">direct</span><code>isUntouchedStale</code> (<code>:1526</code>) compares
+        <code>now - last_touched &gt; interval_days</code> &mdash; a hard deadline, so an inflated value silently
+        <em>suppresses</em> resurfacing, the opposite of the engine's job; <code>TUNING</code> (<code>:93</code>) already
+        establishes the named-constant pattern a floor would use.
+        <span class="btag reasoned">reasoned</span>a conservative "7 for any weekly-with-weekdays" is wrong precisely because
+        timely resurfacing is the whole point; the gap-based number matches how often the meeting actually happens.</p></div>
+      <div class="field"><span class="fl">Rationale</span><p>The non-obvious catch the naive build gets backwards. Adding
+        Daily/Custom without it makes multi-day meetings age <em>slower</em> than today's presets and daily meetings flood
+        &mdash; either way the follow-through engine gets less trustworthy as cadence gets richer.</p></div>
+      <div class="field"><span class="fl">Downsides</span><p class="down">Both numbers are judgment calls that need calibration
+        at first paste-in (joining the existing deferred-tuning list). A floor set too high mutes legitimately-stale daily items.</p></div>
+    </article>
+
+    <!-- IDEA 5 -->
+    <article class="idea" id="i5">
+      <div class="idea-head">
+        <span class="idea-n">5.</span>
+        <h3>Custom recurrence picker &mdash; weekday chips + interval stepper + live next-date preview</h3>
+      </div>
+      <div class="chips">
+        <span class="chip axis"><span class="ck">axis</span> Cadence editor UX</span>
+        <span class="chip conf"><span class="ck">conf</span> 80% · High</span>
+        <span class="chip cx"><span class="ck">cx</span> Medium</span>
+      </div>
+      <p><strong>Description.</strong> When "Custom" is selected in the setup modal, reveal an inline builder: a 7-button
+        weekday toggle row (<code>aria-pressed</code>, no checkboxes), an interval stepper (two buttons, no
+        <code>&lt;input type=number&gt;</code>), and a live computed line &mdash; "Every 14 days · next Jun 27" &mdash; that
+        shows the derived interval and next occurrence as the rule is built. All <code>onClick</code> + React state,
+        satisfying the no-<code>&lt;form&gt;</code> constraint.</p>
+      <div class="field"><span class="fl">Basis</span><p class="basis">
+        <span class="btag direct">direct</span>the only cadence editor today is a single <code>&lt;select&gt;</code>
+        (<code>:3520</code>) fed by <code>CADENCES</code> (<code>:3499</code>) with an <code>e.target.value as Cadence</code>
+        cast &mdash; phone-hostile and unable to hold interval+weekday state.
+        <span class="btag external">external</span>Google Calendar's custom-recurrence dialog is exactly this shape;
+        <code>aria-pressed</code> toggle buttons are the standard accessible substitute when <code>&lt;form&gt;</code>
+        controls are unavailable.</p></div>
+      <div class="field"><span class="fl">Rationale</span><p>The literal surface Bryan asked for ("pick cadence + days of the
+        week"). The live preview closes the loop between what is being picked and when it will resurface, making the otherwise
+        invisible link between cadence and the staleness engine legible at setup time.</p></div>
+      <div class="field"><span class="fl">Downsides</span><p class="down">Real UI work, and it depends on idea 3's structured
+        representation to have something to pick into. Needs a sensible mobile layout for the weekday row.</p></div>
+    </article>
+
+    <!-- IDEA 6 -->
+    <article class="idea" id="i6">
+      <div class="idea-head">
+        <span class="idea-n">6.</span>
+        <h3>Migration and integrity bundle</h3>
+      </div>
+      <div class="chips">
+        <span class="chip axis"><span class="ck">axis</span> Migration &amp; integrity</span>
+        <span class="chip conf"><span class="ck">conf</span> 85% · High</span>
+        <span class="chip cx"><span class="ck">cx</span> Medium</span>
+      </div>
+      <p><strong>Description.</strong> The safety net both features require, as one unit: bump <code>SCHEMA_VERSION</code> to 3;
+        add a single <code>normalizeCadence()</code> chokepoint called on both in-place load and import so legacy string
+        cadences map to the new shape (and unknown values default <em>explicitly</em>, not silently to 14 days); validate
+        cadence shape in <code>validateImportStructure</code>; make <code>fmtDate</code> emit the year when a date isn't in the
+        current calendar year; and guard a future-dated value &mdash; a fat-fingered forward date becomes a visible "held until
+        &lt;date&gt;" state rather than silently disabling aging.</p>
+      <div class="field"><span class="fl">Basis</span><p class="basis">
+        <span class="btag direct">direct</span><code>SCHEMA_VERSION = 2</code> (<code>:89</code>); <code>normalizeImport</code>
+        (<code>:1789</code>) spreads verbatim and <code>validateImportStructure</code> (<code>:1738</code>) checks only
+        id/name, so a structured cadence with no normalization degrades every imported meeting to the 14-day fallback
+        (<code>:620</code>); <code>fmtDate</code> (<code>:2888</code>) has no year; a future <code>last_touched</code> makes
+        <code>now - last_touched</code> negative so <code>isUntouchedStale</code> never fires.
+        <span class="btag external">external</span>the watermark idea &mdash; hold late/future events rather than mis-age them.</p></div>
+      <div class="field"><span class="fl">Rationale</span><p>Import is the only bridge between artifact versions (a new artifact
+        is empty storage), and this is a trust-first app &mdash; a silent cadence corruption or an invisible item on a typo'd
+        date is exactly the quiet failure that erodes the follow-through engine. One normalize chokepoint beats scattered checks.</p></div>
+      <div class="field"><span class="fl">Downsides</span><p class="down">Couples shipping to a schema migration and its import
+        path; the year-aware <code>fmtDate</code> is trivial but the normalize/validate work is real. Mostly invisible to the
+        user (correctly).</p></div>
+    </article>
+
+    <!-- IDEA 7 -->
+    <article class="idea" id="i7">
+      <div class="idea-head">
+        <span class="idea-n">7.</span>
+        <h3>Infer cadence from the meeting-date history</h3>
+      </div>
+      <div class="chips">
+        <span class="chip axis"><span class="ck">axis</span> Cadence editor UX</span>
+        <span class="chip conf"><span class="ck">conf</span> 55% · Medium</span>
+        <span class="chip cx"><span class="ck">cx</span> Medium-High</span>
+      </div>
+      <p><strong>Description.</strong> Once meetings actually carry dates (ideas 1&ndash;2), observe a meeting's real rhythm from
+        the gaps between dated notes and propose a cadence ("Looks like this meets about every 2 weeks &mdash; set to Biweekly?")
+        through the same confirm idiom, instead of asking up front. Because <code>interval_days</code> is computed per-write at
+        ledger-build, cadence can even change over a meeting's life without rewriting history &mdash; old items keep the interval
+        they were stamped with.</p>
+      <div class="field"><span class="fl">Basis</span><p class="basis">
+        <span class="btag direct">direct</span><code>interval_days</code> is derived at ledger-build from the meeting's current
+        cadence (<code>:619&ndash;620</code>), so there's no stored history to migrate when cadence changes;
+        <code>last_meeting_date</code> is dead/vestigial (<code>:393</code>, never written after <code>:1017</code>) and is
+        exactly the field an observed-date stream would revive.
+        <span class="btag external">external</span>the same event-time/watermark logic (rhythm inferred from observed events).</p></div>
+      <div class="field"><span class="fl">Rationale</span><p>Turns cadence from a thing the user must guess into a thing the app
+        notices, and revives the dead <code>last_meeting_date</code>/scheduler hole as a side effect. The compounding payoff of
+        having real dates.</p></div>
+      <div class="field"><span class="fl">Downsides</span><p class="down">Strictly depends on the date features landing first &mdash;
+        with <code>last_meeting_date</code> dead today there is nothing to infer from, which is why it ranks last. Needs 2&ndash;3
+        dated points before it's meaningful, and a wrong suggestion must be easy to decline.</p></div>
+    </article>
+  </section>
+
+  <section>
+    <h2>Rejection Summary</h2>
+    <p class="h2note">Considered and cut or folded. All five axes retained at least one survivor &mdash; no coverage gaps.</p>
+    <table>
+      <thead><tr><th>Idea</th><th>Disposition</th><th>Reason</th></tr></thead>
+      <tbody>
+        <tr><td>New <code>ingested_at</code> field</td><td>Folded &rarr; 1</td><td class="reason">Redundant &mdash; <code>source.date</code> (event) and <code>created_at</code> (ingestion) already express both roles; populate the existing field instead of adding a third.</td></tr>
+        <tr><td>Backfill that only relabels provenance</td><td>Rejected</td><td class="reason">Cosmetic &mdash; the staleness/cockpit/focus chain reads <code>last_touched</code>, so relabeling <code>source.date</code> alone changes nothing behaviorally.</td></tr>
+        <tr><td>Regex-first date parser as primary path</td><td>Folded &rarr; 2</td><td class="reason">Adds code surface and AI works in production; kept as an optional, locally-testable variant, not the main path.</td></tr>
+        <tr><td>Anchor <code>ctx.today</code> to meeting date</td><td>Folded &rarr; 2</td><td class="reason">Part of getting the inferred date right; belongs inside the date-capture idea, not standalone.</td></tr>
+        <tr><td>Per-cadence quiescence floor</td><td>Folded &rarr; 4</td><td class="reason">Same goal as density-derived interval &mdash; keeping richer cadence from breaking the cockpit.</td></tr>
+        <tr><td>Future-date "hold" guard</td><td>Folded &rarr; 6</td><td class="reason">An integrity guard; bundled with the other migration/validation safety work.</td></tr>
+        <tr><td>Compact string cadence <code>"W:1,3,5"</code></td><td>Noted in 3</td><td class="reason">Lighter than a typed object but harder to validate and migrate; recorded as the middle-path alternative.</td></tr>
+        <tr><td>Two-<code>&lt;select&gt;</code> Custom editor</td><td>Rejected</td><td class="reason">Duplicates idea 5's picker, which is more phone-friendly and shows a live preview.</td></tr>
+        <tr><td>Per-frame restatements of "seed <code>last_touched</code>"</td><td>Merged &rarr; 1</td><td class="reason">Five frames produced the same event-time move; consolidated into the strongest single statement.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="composition-signal">
+    Composed 2026-06-20 by ce-ideate from post-testing feedback on <code>meeting-assistant.tsx</code>.
+    5 frames &rarr; 27 raw candidates &rarr; fresh-context basis verification &rarr; 7 ranked survivors.
+    Grounding: code scout over <code>meeting-assistant.tsx</code> + external recurrence / event-time research.
+  </footer>
+
+</div>
+</body>
+</html>

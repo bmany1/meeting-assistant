@@ -2829,17 +2829,21 @@ function CaptureSurface() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [meetingDate, setMeetingDate] = useState(todayDateInput());
+  const today = todayDateInput();
 
   const canSave = text.trim().length > 0 && !!dest && !busy;
 
   const onSave = async () => {
     if (!dest) return;
+    if (isFutureDateInput(meetingDate)) { setErr("That date is in the future. Pick today or an earlier day."); return; }
     setBusy(true);
     setErr(null);
     try {
-      await captureAndAnalyze(dest, text.trim());
+      await captureAndAnalyze(dest, text.trim(), meetingDate);
       setText("");
       setDest(null);
+      setMeetingDate(todayDateInput());
     } catch (e) {
       setErr("Something went wrong saving the note. Try again.");
     } finally {
@@ -2864,6 +2868,21 @@ function CaptureSurface() {
           padding: "14px 16px", border: `1px solid ${BRAND.slateLight}`, borderRadius: RADIUS.sm, resize: "vertical",
         }}
       />
+
+      <div style={{ marginTop: SPACE.md }}>
+        <Field label="Meeting date">
+          <input
+            type="date"
+            value={meetingDate}
+            max={today}
+            onChange={(e) => setMeetingDate(e.target.value)}
+            style={{ ...inputStyle, maxWidth: 220 }}
+          />
+          <span style={{ ...TYPE.meta, color: BRAND.secondaryText, display: "block", marginTop: 4 }}>
+            When did this happen? Defaults to today.
+          </span>
+        </Field>
+      </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.md, marginTop: SPACE.md, flexWrap: "wrap" }}>
         <SectionLabel style={{ textTransform: "none", letterSpacing: 0, ...TYPE.meta, color: BRAND.slateDark }}>Send to</SectionLabel>
@@ -3970,13 +3989,23 @@ function ScopedCapture({ target }: { target: { recordKind: "meeting" | "project"
   const { captureAndAnalyze } = useApp();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
-  const save = async () => { setBusy(true); try { await captureAndAnalyze({ kind: target.recordKind, id: target.recordId } as Destination, text.trim()); setText(""); } finally { setBusy(false); } };
+  const [meetingDate, setMeetingDate] = useState(todayDateInput());
+  const [err, setErr] = useState<string | null>(null);
+  const today = todayDateInput();
+  const save = async () => {
+    if (isFutureDateInput(meetingDate)) { setErr("That date is in the future. Pick today or an earlier day."); return; }
+    setBusy(true); setErr(null);
+    try { await captureAndAnalyze({ kind: target.recordKind, id: target.recordId } as Destination, text.trim(), meetingDate); setText(""); setMeetingDate(todayDateInput()); }
+    finally { setBusy(false); }
+  };
   return (
     <Card>
       <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={target.recordKind === "meeting" ? "Paste notes from this meeting" : "Paste a project update"} style={{ width: "100%", boxSizing: "border-box", background: BRAND.slateXLight, ...TYPE.body, fontSize: "0.9375rem", padding: 12, border: `1px solid ${BRAND.slateLight}`, borderRadius: RADIUS.sm, minHeight: 96, resize: "vertical" }} />
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: SPACE.sm }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.sm, flexWrap: "wrap" }}>
+        <input type="date" value={meetingDate} max={today} onChange={(e) => setMeetingDate(e.target.value)} aria-label="Meeting date" title="When did this happen? Defaults to today." style={{ ...inputStyle, width: "auto", padding: "6px 10px" }} />
         <Button variant="primary" disabled={!text.trim() || busy} onClick={save} icon={busy ? undefined : <Check size={15} />}>{busy ? <Spinner /> : "Save and analyze"}</Button>
       </div>
+      {err ? <div style={{ marginTop: SPACE.sm }}><InlineError reassurance="Your note is not lost." message={err} onRetry={save} /></div> : null}
     </Card>
   );
 }

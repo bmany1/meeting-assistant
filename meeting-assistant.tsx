@@ -2822,6 +2822,10 @@ function destinationLabel(d: Destination | null, meetings: Meeting[], projects: 
   return `New project: ${d.name}`;
 }
 
+// One source of truth for the future-date rejection copy, shared by both
+// capture surfaces (R3 / KTD4).
+const FUTURE_DATE_MESSAGE = "That date is in the future. Pick today or an earlier day.";
+
 function CaptureSurface() {
   const { meetings, projects, captureAndAnalyze } = useApp();
   const [text, setText] = useState("");
@@ -2836,7 +2840,7 @@ function CaptureSurface() {
 
   const onSave = async () => {
     if (!dest) return;
-    if (isFutureDateInput(meetingDate)) { setErr("That date is in the future. Pick today or an earlier day."); return; }
+    if (isFutureDateInput(meetingDate)) { setErr(FUTURE_DATE_MESSAGE); return; }
     setBusy(true);
     setErr(null);
     try {
@@ -3997,7 +4001,7 @@ function ScopedCapture({ target }: { target: { recordKind: "meeting" | "project"
   const [err, setErr] = useState<string | null>(null);
   const today = todayDateInput();
   const save = async () => {
-    if (isFutureDateInput(meetingDate)) { setErr("That date is in the future. Pick today or an earlier day."); return; }
+    if (isFutureDateInput(meetingDate)) { setErr(FUTURE_DATE_MESSAGE); return; }
     setBusy(true); setErr(null);
     try { await captureAndAnalyze({ kind: target.recordKind, id: target.recordId } as Destination, text.trim(), meetingDate); setText(""); setMeetingDate(todayDateInput()); }
     finally { setBusy(false); }

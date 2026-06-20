@@ -13,6 +13,12 @@ async function flush(n = 4) {
   for (let i = 0; i < n; i++) await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
 }
 
+// Anchor fixtures to the real clock the live <App> reads (it uses new Date()),
+// so date-sensitive assertions do not rot as wall-clock time advances past a
+// hardcoded fixture date. Mirrors the fixed-NOW + daysAgo() convention used by
+// the hermetic suites, but relative to now since the App has no injectable now.
+const recentISO = (daysAgo = 0) => new Date(Date.now() - daysAgo * 86400000).toISOString();
+
 describe("smoke: the app mounts and boots without throwing", () => {
   beforeEach(async () => { for (const k of await storage.list("")) await storage.delete(k); });
 
@@ -30,8 +36,8 @@ describe("smoke: the app mounts and boots without throwing", () => {
 
   it("renders the cockpit groups when a ledger has open items", async () => {
     // Seed one meeting + an open to-do so the cockpit (not first-run) renders.
-    await storage.set("meetings:list", [{ id: "m1", name: "Team weekly", cadence: "Weekly", purpose: "", people: "", last_meeting_date: null, next_meeting_date: null, created_at: "2026-06-13T00:00:00Z" }]);
-    await storage.set("meeting:m1", { summary: "", notes: [], todos: [{ id: "t1", key: "send the deck::meeting:m1::0", kind: "todo", text: "send the deck", owner: "i_owe", waiting_on: null, priority: "High", due_date: null, due_confirmed: false, owner_confirmed: true, interval_confirmed: true, status: "open", project_id: null, source: { kind: "meeting", meeting_id: "m1", note_id: null, date: "2026-06-13T00:00:00Z" }, quote: "", quote_anchored: false, occurrence: 0, created_at: "2026-06-13T00:00:00Z", completed_at: null, last_touched: "2026-06-13T00:00:00Z" }], decisions: [], talking_points: [], chat: [], updated_at: "2026-06-13T00:00:00Z" });
+    await storage.set("meetings:list", [{ id: "m1", name: "Team weekly", cadence: "Weekly", purpose: "", people: "", last_meeting_date: null, next_meeting_date: null, created_at: recentISO(1) }]);
+    await storage.set("meeting:m1", { summary: "", notes: [], todos: [{ id: "t1", key: "send the deck::meeting:m1::0", kind: "todo", text: "send the deck", owner: "i_owe", waiting_on: null, priority: "High", due_date: null, due_confirmed: false, owner_confirmed: true, interval_confirmed: true, status: "open", project_id: null, source: { kind: "meeting", meeting_id: "m1", note_id: null, date: recentISO(1) }, quote: "", quote_anchored: false, occurrence: 0, created_at: recentISO(1), completed_at: null, last_touched: recentISO(1) }], decisions: [], talking_points: [], chat: [], updated_at: recentISO(1) });
 
     const container = document.createElement("div");
     document.body.appendChild(container);

@@ -1928,20 +1928,23 @@ function useStore() {
   // meeting/project writes that record before the note attaches. Returns the
   // saved note's source reference so extraction (U4) can anchor against it.
   const saveRawNote = useCallback(
-    async (dest: Destination, text: string): Promise<{ recordKind: "meeting" | "project"; recordId: string; sourceRef: SourceRef; text: string }> => {
+    async (dest: Destination, text: string, noteDateISO: string = nowISO()): Promise<{ recordKind: "meeting" | "project"; recordId: string; sourceRef: SourceRef; text: string }> => {
       let resolved: { kind: "meeting" | "project"; id: string };
       if (dest.kind === "new_meeting") { const m = await createMeeting(dest.name, dest.cadence); resolved = { kind: "meeting", id: m.id }; }
       else if (dest.kind === "new_project") { const p = await createProject(dest.name); resolved = { kind: "project", id: p.id }; }
       else resolved = { kind: dest.kind, id: dest.id };
 
+      // noteDateISO is the chosen event date: it stamps both the note timestamp
+      // and the source ref's date, so extraction anchors items to it (U1 seeds
+      // last_touched from source.date). Defaults to now for same-day capture.
       if (resolved.kind === "meeting") {
         const noteId = uid("note");
-        await commitMeetingData(resolved.id, (cur) => addMeetingNote(cur, text, noteId));
-        return { recordKind: "meeting", recordId: resolved.id, sourceRef: { kind: "meeting", meeting_id: resolved.id, note_id: noteId, date: nowISO() }, text };
+        await commitMeetingData(resolved.id, (cur) => addMeetingNote(cur, text, noteId, noteDateISO));
+        return { recordKind: "meeting", recordId: resolved.id, sourceRef: { kind: "meeting", meeting_id: resolved.id, note_id: noteId, date: noteDateISO }, text };
       } else {
         const noteId = uid("upd");
-        await commitProjectData(resolved.id, (cur) => addProjectUpdate(cur, text, noteId));
-        return { recordKind: "project", recordId: resolved.id, sourceRef: { kind: "direct", meeting_id: null, note_id: noteId, date: nowISO() }, text };
+        await commitProjectData(resolved.id, (cur) => addProjectUpdate(cur, text, noteId, noteDateISO));
+        return { recordKind: "project", recordId: resolved.id, sourceRef: { kind: "direct", meeting_id: null, note_id: noteId, date: noteDateISO }, text };
       }
     },
     [createMeeting, createProject]
@@ -1951,16 +1954,29 @@ function useStore() {
   // the destination record, run single-pass or chunked extraction, and land on
   // the verification screen. The note is already safe before any AI runs.
   const captureAndAnalyze = useCallback(
-    async (dest: Destination, text: string) => {
-      const saved = await saveRawNote(dest, text);
+    async (dest: Destination, text: string, meetingDateInput?: string) => {
+      // Resolve the chosen event date (defaults to today, local calendar day).
+      // A future date never reaches storage: a future last_touched would make the
+      // item never age as stale, so the UI rejects it visibly (R3/KTD4) and this
+      // clamp is the backstop. The chosen date stamps the note timestamp and
+      // provenance, anchors relative-due inference (R8), and feeds "last met" (R9).
+      const dateInput = meetingDateInput || todayDateInput();
+      const future = isFutureDateInput(dateInput);
+      const chosenISO = future ? nowISO() : fromDateInput(dateInput);
+      const today = future ? todayDateInput() : dateInput;
+      const saved = await saveRawNote(dest, text, chosenISO);
       await refreshLedger();
-      const today = new Date().toISOString().slice(0, 10);
       const projectNames = ((await storage.getJSON<Project[]>(KEY.projectsList)) || []).map((p) => p.name);
       let ctx: ExtractionContext;
       if (saved.recordKind === "meeting") {
         const m = ((await storage.getJSON<Meeting[]>(KEY.meetingsList)) || []).find((x) => x.id === saved.recordId);
         const md = await storage.getJSON<MeetingData>(KEY.meeting(saved.recordId));
         ctx = { destKind: "meeting", meetingName: m?.name, cadence: m?.cadence, purpose: m?.purpose, people: m?.people, projectNames, openTodos: (md?.todos || []).filter((t) => t.status === "open").map((t) => t.text), today, autoProjectId: null };
+        // "Last met" reflects the newest note's meeting date and never regresses (R9).
+        // updateMeeting is a stable useCallback declared later in App; it is referenced
+        // here (not in this callback's deps) on purpose -- adding it to the deps array
+        // would read it before initialization (TDZ) at render.
+        await updateMeeting(saved.recordId, { last_meeting_date: latestMeetingDate(m?.last_meeting_date ?? null, chosenISO) });
       } else {
         const p = ((await storage.getJSON<Project[]>(KEY.projectsList)) || []).find((x) => x.id === saved.recordId);
         const pd = await storage.getJSON<ProjectData>(KEY.project(saved.recordId));
@@ -2898,11 +2914,44 @@ export function fmtDate(iso: string | null): string {
   if (Number.isNaN(d.getTime())) return "";
   return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
 }
-function toDateInput(iso: string | null): string {
+export function toDateInput(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   return d.toISOString().slice(0, 10);
+}
+
+// Convert a date-only input value ("YYYY-MM-DD") to an ISO instant anchored at
+// LOCAL noon, so the stored date's local calendar day equals the picked day
+// (KTD6). new Date("YYYY-MM-DD") parses as UTC midnight, which renders as the
+// previous calendar day in negative-UTC-offset zones; noon is the safe anchor.
+export function fromDateInput(value: string): string {
+  if (!value) return nowISO();
+  const [y, m, d] = value.split("-").map(Number);
+  if (!y || !m || !d) return nowISO();
+  return new Date(y, m - 1, d, 12, 0, 0, 0).toISOString();
+}
+// The user's LOCAL calendar date as "YYYY-MM-DD", for the date-input value/max
+// and the future-date guard. Distinct from toDateInput(nowISO()), which is
+// UTC-based and can read as the next day late in the day in negative-UTC-offset
+// zones (which would make the default itself a future date).
+export function todayDateInput(now: Date = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+// A date-only input value is "future" when its calendar day is after today's
+// (string compare is valid for zero-padded YYYY-MM-DD). Drives the R3 guard.
+export function isFutureDateInput(value: string, now: Date = new Date()): boolean {
+  return !!value && value > todayDateInput(now);
+}
+// "Last met" never regresses: returns the later of the existing last-met date
+// and the chosen event date, so backfilling an older note cannot move it earlier
+// than a more recent note already set it (R9). Null existing -> the chosen date.
+export function latestMeetingDate(existing: string | null, chosen: string): string {
+  if (!existing) return chosen;
+  return new Date(chosen).getTime() > new Date(existing).getTime() ? chosen : existing;
 }
 // Plain relative-time words for the slipping/stale signal (no alarm, no badge).
 export function ageWords(fromISO: string, now: Date = new Date()): string {

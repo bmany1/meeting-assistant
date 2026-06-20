@@ -2927,11 +2927,15 @@ function CaptureSurface() {
  * ========================================================================== */
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-export function fmtDate(iso: string | null): string {
+// Month + day; the year is appended only when the date is not in the reference
+// year (default now), so a backfilled prior-year date is unambiguous (R10). The
+// optional ref keeps the test hermetic, mirroring the staleness functions' now arg.
+export function fmtDate(iso: string | null, ref: Date = new Date()): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
+  const base = `${MONTHS[d.getMonth()]} ${d.getDate()}`;
+  return d.getFullYear() === ref.getFullYear() ? base : `${base}, ${d.getFullYear()}`;
 }
 export function toDateInput(iso: string | null): string {
   if (!iso) return "";

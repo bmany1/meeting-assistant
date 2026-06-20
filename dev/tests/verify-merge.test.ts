@@ -7,6 +7,10 @@ import {
   mergeRerun,
   buildRerunPrompt,
   emptyMeetingData,
+  emptyProjectData,
+  addMeetingNote,
+  addProjectUpdate,
+  isUntouchedStale,
   ledgerItemKey,
   rebuildLedgerFromRecords,
   commitMeetingData,
@@ -15,11 +19,13 @@ import {
   type Proposal,
   type SourceRef,
   type Item,
+  type StaleInput,
   type ExtractionContext,
 } from "../../meeting-assistant";
 
 const SRC: SourceRef = { kind: "meeting", meeting_id: "m1", note_id: "n1", date: "2026-06-13T00:00:00Z" };
 const NOW = "2026-06-13T12:00:00.000Z";
+function daysAgo(n: number): string { return new Date(new Date(NOW).getTime() - n * 86400000).toISOString(); }
 
 function prop(p: Partial<Proposal>): Proposal {
   return {
@@ -112,5 +118,52 @@ describe("accept -> single ledger rebuild reflects the committed set (integratio
     const md = await storage.getJSON<any>(KEY.meeting("m1"));
     const ledger = rebuildLedgerFromRecords({ meetings: [m], meetingData: { m1: md }, followthrough: { tombstones: [], item_state: {} } }, NOW);
     expect(ledger.items.filter((i) => i.kind !== "decision").map((i) => i.text).sort()).toEqual(["alpha", "bravo"]);
+  });
+});
+
+describe("U1: event-date seeding of staleness + provenance (R5/R6/R7)", () => {
+  const tenDaysAgo = daysAgo(10);
+  const srcTenDaysAgo: SourceRef = { kind: "meeting", meeting_id: "m1", note_id: "n1", date: tenDaysAgo };
+
+  it("proposalToItem seeds last_touched from the source (event) date, keeping created_at at the ingestion now (AE2)", () => {
+    const it = proposalToItem(prop({ source: srcTenDaysAgo }), NOW);
+    expect(it.last_touched).toBe(tenDaysAgo); // ages from the meeting date, not the paste-in time
+    expect(it.created_at).toBe(NOW); // a true record of when it was entered
+  });
+
+  it("falls back to the ingestion now for last_touched when the proposal has no source date (back-compat)", () => {
+    const it = proposalToItem(prop({ source: { ...SRC, date: undefined as any } }), NOW);
+    expect(it.last_touched).toBe(NOW);
+  });
+
+  it("applyAcceptToMeetingData propagates the seeded last_touched into the stored item", () => {
+    const md = applyAcceptToMeetingData(emptyMeetingData(), [prop({ text: "alpha", source: srcTenDaysAgo })], NOW);
+    const item = md.todos.find((t) => t.text === "alpha")!;
+    expect(item.last_touched).toBe(tenDaysAgo);
+    expect(item.created_at).toBe(NOW);
+  });
+
+  it("applyAcceptToProjectData propagates the seeded last_touched into the stored item", () => {
+    const pd = applyAcceptToProjectData(emptyProjectData(), [prop({ text: "beta", source: { kind: "direct", meeting_id: null, note_id: "u1", date: tenDaysAgo } })], NOW);
+    const item = pd.items.find((t) => t.text === "beta")!;
+    expect(item.last_touched).toBe(tenDaysAgo);
+  });
+
+  it("a backfilled commitment 10 days old with a confirmed 7-day interval is immediately untouched-stale (R7/AE2)", () => {
+    const it = proposalToItem(prop({ interval_confirmed: true, source: srcTenDaysAgo }), NOW);
+    const stale: StaleInput = {
+      status: it.status, due_date: it.due_date, due_confirmed: it.due_confirmed,
+      last_touched: it.last_touched, interval_days: 7, interval_confirmed: it.interval_confirmed,
+    };
+    expect(isUntouchedStale(stale, new Date(NOW))).toBe(true);
+  });
+
+  it("addMeetingNote/addProjectUpdate stamp note.timestamp from the optional argument, defaulting to a valid ISO", () => {
+    const md = addMeetingNote(emptyMeetingData(), "note body", "note1", tenDaysAgo);
+    expect(md.notes[0].timestamp).toBe(tenDaysAgo);
+    const pd = addProjectUpdate(emptyProjectData(), "update body", "upd1", tenDaysAgo);
+    expect(pd.updates[0].timestamp).toBe(tenDaysAgo);
+    const dflt = addMeetingNote(emptyMeetingData(), "x", "note2"); // arg omitted -> defaults to nowISO()
+    expect(Number.isNaN(new Date(dflt.notes[0].timestamp).getTime())).toBe(false);
   });
 });

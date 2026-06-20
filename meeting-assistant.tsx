@@ -1023,12 +1023,14 @@ export function makeProject(name: string, dot_color: string): Project {
   return { id: uid("prj"), name: name.trim(), status: "active", target_date: null, dot_color, created_at: nowISO() };
 }
 
-export function addMeetingNote(md: MeetingData, content: string, id = uid("note")): MeetingData {
-  const note: Note = { id, timestamp: nowISO(), content };
+// timestamp defaults to nowISO() but accepts the chosen meeting date (U2), so a
+// backfilled note records when the meeting happened, not when it was pasted in.
+export function addMeetingNote(md: MeetingData, content: string, id = uid("note"), timestamp = nowISO()): MeetingData {
+  const note: Note = { id, timestamp, content };
   return { ...md, notes: [note, ...md.notes] };
 }
-export function addProjectUpdate(pd: ProjectData, content: string, id = uid("upd")): ProjectData {
-  const update: ProjectUpdate = { id, timestamp: nowISO(), content };
+export function addProjectUpdate(pd: ProjectData, content: string, id = uid("upd"), timestamp = nowISO()): ProjectData {
+  const update: ProjectUpdate = { id, timestamp, content };
   return { ...pd, updates: [update, ...pd.updates] };
 }
 
@@ -1387,7 +1389,12 @@ export function proposalToItem(p: Proposal, now = nowISO()): Item {
     due_date: p.due_date, due_confirmed: p.due_confirmed, owner_confirmed: p.owner_confirmed,
     interval_confirmed: p.interval_confirmed, status: "open", project_id: p.project_id,
     source: p.source, quote: p.quote, quote_anchored: p.quote_anchored, occurrence: p.occurrence,
-    created_at: now, completed_at: null, last_touched: now,
+    // last_touched seeds the staleness clock from the EVENT date (the meeting
+    // date carried on the source ref), so a backfilled commitment ages from when
+    // it was really made; created_at stays the true ingestion instant. Falls back
+    // to now when no source date is present (back-compat). This is inert in
+    // production until the capture flow supplies a real date (source.date == now today).
+    created_at: now, completed_at: null, last_touched: p.source?.date ?? now,
   };
   item.key = ledgerItemKey(item);
   return item;

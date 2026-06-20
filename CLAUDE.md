@@ -189,7 +189,13 @@ Build and keep all of this working (full detail in spec):
 - Structured AI output: strict JSON + `safeParseJSON` fallback.
 - Wrap every AI and storage call; catch failures, show small inline message, never destroy user data.
 - Save-before-analyze ordering for notes.
+- **Event-time aging (load-bearing):** `proposalToItem` seeds `last_touched` from `source.date` (the meeting
+  date), not the ingestion instant; `created_at` keeps the true ingestion time. A captured note's chosen date
+  flows through `captureAndAnalyze` → `saveRawNote` (note timestamp + `sourceRef.date`). Date-input values convert
+  via the local-noon `fromDateInput`/`todayDateInput` helpers, never `new Date("YYYY-MM-DD")` (UTC-midnight off-by-one).
+  Don't regress this when touching aging, cockpit ranking, or the queued cadence work.
 - Responsive / phone-friendly layout.
+<!-- Updated 2026-06-20: added event-time aging invariant after the meeting-date-backfill build (U1-U4) -->
 
 ---
 

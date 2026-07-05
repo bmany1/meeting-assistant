@@ -2666,11 +2666,33 @@ export function ProjectDot({ color, size = 6 }: { color: string; size?: number }
 }
 
 interface PickerOption {
-  group: "Recent" | "Meetings" | "Projects";
+  group: "Recommended" | "Recent" | "Meetings" | "Projects";
   destination: Destination;
   label: string;
   meta?: string;
   dot?: string;
+}
+
+// Build the "Recommended" option surfaced at the top of a verification retag
+// picker. An existing-name match injects that project; a name matching nothing
+// injects a create-new destination (bypassing the picker's normal "must type to
+// create" rule, since the name comes from the recommendation, not the search
+// box). Gated to an empty query — mirrors the Recent group's !q gate — so a
+// typed search hides it and falls through to the normal typed behavior rather
+// than keeping the list non-empty. Nothing here pre-selects: these are just
+// options in the list; the picker still opens with active = -1. (R11, R12.)
+export function buildRecommendedOptions(
+  recommended: { name: string } | null | undefined,
+  projects: Project[],
+  query: string
+): PickerOption[] {
+  if (query.trim()) return [];
+  const name = recommended?.name.trim();
+  if (!name) return [];
+  const match = projects.find((p) => p.name.toLowerCase() === name.toLowerCase());
+  return match
+    ? [{ group: "Recommended", destination: { kind: "project", id: match.id }, label: match.name, dot: match.dot_color }]
+    : [{ group: "Recommended", destination: { kind: "new_project", name }, label: `Create project "${name}"` }];
 }
 
 // The signature combobox. Reused by Capture (primary) and Verification retag.
@@ -2682,11 +2704,13 @@ function DestinationPicker({
   onClose,
   allowProjects = true,
   allowMeetings = true,
+  recommended,
 }: {
   onSelect: (d: Destination) => void;
   onClose: () => void;
   allowProjects?: boolean;
   allowMeetings?: boolean;
+  recommended?: { name: string };
 }) {
   const { meetings, projects, ledger } = useApp();
   const [query, setQuery] = useState("");
@@ -2742,7 +2766,10 @@ function DestinationPicker({
     if (allowMeetings) createRows.push({ group: "Meetings", destination: { kind: "new_meeting", name: typed, cadence: "Weekly" }, label: `Create new meeting "${typed}"` });
     if (allowProjects) createRows.push({ group: "Projects", destination: { kind: "new_project", name: typed }, label: `Create new project "${typed}"` });
   }
-  const flat = [...options, ...createRows];
+  // Recommended (verification retag only) surfaces at the very top, ahead of
+  // Recent. Empty-query-gated inside the helper; nothing pre-selects.
+  const recommendedOpts = allowProjects ? buildRecommendedOptions(recommended, projects, query) : [];
+  const flat = [...recommendedOpts, ...options, ...createRows];
 
   const meetingNames = meetings.map((m) => m.name);
   const projectNames = projects.map((p) => p.name);
@@ -2768,7 +2795,7 @@ function DestinationPicker({
 
   const degrade = options.length <= TUNING.PICKER_DEGRADE_MAX && !q;
   let renderIndex = -1;
-  const groups: PickerOption["group"][] = ["Recent", "Meetings", "Projects"];
+  const groups: PickerOption["group"][] = ["Recommended", "Recent", "Meetings", "Projects"];
 
   return (
     <div
@@ -3205,7 +3232,7 @@ function VerificationRow({
 
       {retag ? (
         <div style={{ position: "relative", marginBottom: 8 }}>
-          <DestinationPicker allowMeetings={false} onSelect={pickProject} onClose={() => setRetag(false)} />
+          <DestinationPicker allowMeetings={false} onSelect={pickProject} onClose={() => setRetag(false)} recommended={row.project_proposed_name ? { name: row.project_proposed_name } : undefined} />
         </div>
       ) : null}
 

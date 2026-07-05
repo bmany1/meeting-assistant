@@ -1409,6 +1409,20 @@ export function proposalToDecision(p: Proposal, now = nowISO()): Decision {
   return d;
 }
 
+// The commit-time tag rule. Ratify-by-default: the accept step applies ONLY
+// the tags the user confirmed during verification (rows with project_id set).
+// It performs no name-matching and no tag application of its own, so an
+// unconfirmed proposal (project_id null, whether or not project_proposed_name
+// matches an existing project) stays untagged and, since proposalToItem writes
+// only project_id, commits with no tag. (R1/R2/R3; restores surface-specs R20.)
+// `projects` is kept in the signature as the guarded seam: the deleted
+// auto-apply lived here, and the U1 unit test fails if any name-matching is
+// reintroduced into this function.
+export function resolveAcceptedTags<T extends { project_id: string | null }>(rows: T[], projects: Project[]): T[] {
+  void projects;
+  return rows.map((r) => r);
+}
+
 // Resolve which open to-dos a set of completion proposals marks done (best
 // token-set match per completion, above threshold). Returns a Set of item ids.
 export function resolveCompletions(openItems: Item[], completionTexts: string[], threshold = TUNING.COMPLETION_THRESHOLD): Set<string> {
@@ -3253,15 +3267,10 @@ function VerificationSurface() {
 
   const onAccept = async () => {
     setAccepting(true);
-    // resolve still-proposed tags that match an existing project (auto-apply
-    // existing-project matches; new-name proposals require explicit confirm)
-    const accepted = live.map((r) => {
-      if (!r.project_id && r.project_proposed_name) {
-        const match = projects.find((p) => p.name.toLowerCase() === r.project_proposed_name!.toLowerCase());
-        if (match) return { ...r, project_id: match.id };
-      }
-      return r;
-    });
+    // Commit only the tags the user confirmed during verification. No accept-time
+    // auto-apply: an unconfirmed proposal (project_id null) stays untagged even
+    // when its proposed name matches an existing project. (R1/R2/R3; restores R20.)
+    const accepted = resolveAcceptedTags(live, projects);
     // tombstones for dismissed (with reason) — re-extraction will not resurface
     const tombstones: TombstoneRecord[] = rows
       .filter((r) => r._dismissed)

@@ -3079,6 +3079,38 @@ export function DismissReasonControl({ onPick, onCancel }: { onPick: (r: Dismiss
 
 type VProposal = Proposal & { _dismissed?: boolean; _dismissReason?: DismissReason; _ghosted?: boolean; _ghostTomb?: TombstoneRecord; _restored?: boolean };
 
+// The four render states of a row's project tag, decided from project_id,
+// project_proposed_name, and the CURRENT project list (render-time lookup, so a
+// name that becomes a real project mid-verification reclassifies from create to
+// inferred on the next render). Only project_id is written at commit, so every
+// non-confirmed state carries no tag into storage. Single source of truth for
+// both the render and the one-tap handlers. (KTD3, KTD4.)
+export type ProposedTagState = "confirmed" | "inferred" | "create" | "none";
+export function classifyProposedTag(
+  row: { project_id: string | null; project_proposed_name: string | null },
+  projects: Project[]
+): ProposedTagState {
+  if (row.project_id && projects.some((p) => p.id === row.project_id)) return "confirmed";
+  const name = row.project_proposed_name;
+  if (!name) return "none";
+  return projects.some((p) => p.name.toLowerCase() === name.toLowerCase()) ? "inferred" : "create";
+}
+
+// One-tap confirm for an inferred (existing-match) tag: resolve the proposed
+// name to the existing project id and null the proposed name, flipping the row
+// in place to confirmed. A non-matching name is left untouched (that is the
+// create path, which creates a project as a side effect and is handled in the
+// component). (R5.)
+export function confirmExistingTag<T extends { project_id: string | null; project_proposed_name: string | null }>(
+  row: T,
+  projects: Project[]
+): T {
+  const name = row.project_proposed_name;
+  if (!name) return row;
+  const match = projects.find((p) => p.name.toLowerCase() === name.toLowerCase());
+  return match ? { ...row, project_id: match.id, project_proposed_name: null } : row;
+}
+
 function VerificationRow({
   row,
   onChange,
@@ -3117,6 +3149,17 @@ function VerificationRow({
     setRetag(false);
   };
 
+  // Which of the four tag states this row is in, decided from the current
+  // project list (render-time; a name that becomes a real project mid-session
+  // reclassifies create -> inferred on the next render).
+  const tagState = classifyProposedTag(row, projects);
+  // One tap on an inferred (existing-match) tag confirms it in place via the
+  // tested pure transform; one tap on a create proposal creates the project and
+  // tags with it. Left untouched, nothing commits (U1).
+  const confirmProposedTag = () => onChange(confirmExistingTag(row, projects));
+  const createProposedTag = () => pickProject({ kind: "new_project", name: row.project_proposed_name! });
+  const clearProposedTag = () => onChange({ ...row, project_proposed_name: null });
+
   return (
     <Card pad={SPACE.md} style={{ opacity: row._ghosted && !row._restored ? 0.6 : 1 }}>
       {/* control / pill row */}
@@ -3124,9 +3167,13 @@ function VerificationRow({
         {row.kind !== "decision" ? <OwnerPill owner={row.owner} waiting_on={row.waiting_on} onClick={flipOwner} /> : <SectionLabel style={{ margin: 0 }}>Decision</SectionLabel>}
         {proj ? (
           <ProjectTagPill name={proj.name} dot={proj.dot_color} onClick={() => setRetag((v) => !v)} />
-        ) : row.project_proposed_name ? (
-          <button type="button" onClick={() => setRetag((v) => !v)} style={{ ...TYPE.meta, fontWeight: 500, background: BRAND.amber20, color: BRAND.slateDark, padding: "2px 9px", borderRadius: RADIUS.full, border: `1px dashed ${BRAND.slateLight}`, cursor: "pointer" }}>
-            Tag: {row.project_proposed_name}?
+        ) : tagState === "inferred" || tagState === "create" ? (
+          // Inferred ink, not a pill: secondary-gray + dotted underline + an
+          // "inferred" label carrying the not-yet-confirmed meaning in words.
+          // One tap confirms (existing match) or creates (new name).
+          <button type="button" onClick={tagState === "create" ? createProposedTag : confirmProposedTag} title="Confirm tag" style={{ display: "inline-flex", alignItems: "baseline", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
+            <span style={{ ...TYPE.meta, color: BRAND.secondaryText, borderBottom: `1px dotted ${BRAND.slateMedium}` }}>{row.project_proposed_name}</span>
+            <span style={{ ...TYPE.label, fontSize: "0.625rem", color: BRAND.secondaryText }}>inferred</span>
           </button>
         ) : (
           <button type="button" onClick={() => setRetag((v) => !v)} style={{ ...TYPE.meta, background: "none", border: "none", color: BRAND.indigo, cursor: "pointer", padding: "2px 4px" }}>+ tag</button>
@@ -3137,11 +3184,14 @@ function VerificationRow({
         </div>
       </div>
 
-      {row.project_proposed_name && !proj && !retag ? (
+      {(tagState === "inferred" || tagState === "create") && !retag ? (
+        // Secondary affordances under the inferred tag: pick a different project,
+        // or decline it entirely (leaving the item untagged). The confirm/create
+        // action is the one-tap on the tag itself above.
         <div style={{ ...TYPE.meta, marginBottom: 6 }}>
-          <button type="button" onClick={async () => { const existing = projects.find((p) => p.name.toLowerCase() === row.project_proposed_name!.toLowerCase()); await pickProject(existing ? { kind: "project", id: existing.id } : { kind: "new_project", name: row.project_proposed_name! }); }} style={{ color: BRAND.indigo, background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}>Confirm tag</button>
+          <button type="button" onClick={() => setRetag(true)} style={{ color: BRAND.secondaryText, background: "none", border: "none", cursor: "pointer", padding: 0 }}>change</button>
           <span style={{ color: BRAND.slateLight, margin: "0 6px" }}>·</span>
-          <button type="button" onClick={() => onChange({ ...row, project_proposed_name: null })} style={{ color: BRAND.secondaryText, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Remove</button>
+          <button type="button" onClick={clearProposedTag} style={{ color: BRAND.secondaryText, background: "none", border: "none", cursor: "pointer", padding: 0 }}>clear</button>
         </div>
       ) : null}
 

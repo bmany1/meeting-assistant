@@ -2673,6 +2673,13 @@ interface PickerOption {
   dot?: string;
 }
 
+// Case-insensitive project-name match — the single rule for turning a proposed
+// name into an existing project across classify / confirm / recommend.
+export function matchProjectByName(projects: Project[], name: string): Project | undefined {
+  const n = name.trim().toLowerCase();
+  return n ? projects.find((p) => p.name.toLowerCase() === n) : undefined;
+}
+
 // Build the "Recommended" option surfaced at the top of a verification retag
 // picker. An existing-name match injects that project; a name matching nothing
 // injects a create-new destination (bypassing the picker's normal "must type to
@@ -2689,7 +2696,7 @@ export function buildRecommendedOptions(
   if (query.trim()) return [];
   const name = recommended?.name.trim();
   if (!name) return [];
-  const match = projects.find((p) => p.name.toLowerCase() === name.toLowerCase());
+  const match = matchProjectByName(projects, name);
   return match
     ? [{ group: "Recommended", destination: { kind: "project", id: match.id }, label: match.name, dot: match.dot_color }]
     : [{ group: "Recommended", destination: { kind: "new_project", name }, label: `Create project "${name}"` }];
@@ -3120,7 +3127,7 @@ export function classifyProposedTag(
   if (row.project_id && projects.some((p) => p.id === row.project_id)) return "confirmed";
   const name = row.project_proposed_name;
   if (!name) return "none";
-  return projects.some((p) => p.name.toLowerCase() === name.toLowerCase()) ? "inferred" : "create";
+  return matchProjectByName(projects, name) ? "inferred" : "create";
 }
 
 // One-tap confirm for an inferred (existing-match) tag: resolve the proposed
@@ -3132,9 +3139,8 @@ export function confirmExistingTag<T extends { project_id: string | null; projec
   row: T,
   projects: Project[]
 ): T {
-  const name = row.project_proposed_name;
-  if (!name) return row;
-  const match = projects.find((p) => p.name.toLowerCase() === name.toLowerCase());
+  if (!row.project_proposed_name) return row;
+  const match = matchProjectByName(projects, row.project_proposed_name);
   return match ? { ...row, project_id: match.id, project_proposed_name: null } : row;
 }
 

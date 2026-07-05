@@ -37,6 +37,25 @@ describe("classifyProposedTag (U2 — pure tag state)", () => {
   });
 });
 
+describe("classifyProposedTag create state (U3 — R8/R10)", () => {
+  it("create when the proposed name matches no existing project", () => {
+    expect(classifyProposedTag(row(null, "Falcon"), projects)).toBe("create");
+  });
+
+  it("a name matching a project created mid-verification reclassifies create -> inferred on the next render (KTD3)", () => {
+    const r = row(null, "Falcon");
+    expect(classifyProposedTag(r, projects)).toBe("create");
+    const withFalcon = [...projects, proj("Falcon", "pr_falcon")];
+    expect(classifyProposedTag(r, withFalcon)).toBe("inferred"); // same row, updated project list
+  });
+
+  it("confirmExistingTag is a no-op on a create-state row (creation is a side effect, handled in the component)", () => {
+    const next = confirmExistingTag(row(null, "Falcon"), projects);
+    expect(next.project_id).toBe(null);
+    expect(next.project_proposed_name).toBe("Falcon"); // untouched; not silently linked to a lookalike
+  });
+});
+
 describe("confirmExistingTag (U2 — one-tap confirm transform, R5)", () => {
   it("sets project_id to the matched project and nulls the proposed name (inferred -> confirmed)", () => {
     const next = confirmExistingTag(row(null, "Apollo"), projects);

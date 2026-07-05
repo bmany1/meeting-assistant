@@ -3167,11 +3167,19 @@ function VerificationRow({
         {row.kind !== "decision" ? <OwnerPill owner={row.owner} waiting_on={row.waiting_on} onClick={flipOwner} /> : <SectionLabel style={{ margin: 0 }}>Decision</SectionLabel>}
         {proj ? (
           <ProjectTagPill name={proj.name} dot={proj.dot_color} onClick={() => setRetag((v) => !v)} />
-        ) : tagState === "inferred" || tagState === "create" ? (
+        ) : tagState === "create" ? (
+          // A genuinely new name reads as an explicit create action (Plus glyph +
+          // "Create" + indigo), visually distinct from confirming a lookalike
+          // existing tag, so a single tap is an informed choice. Mirrors the
+          // picker's "Create new project" row.
+          <button type="button" onClick={createProposedTag} title="Create this project and tag the item" style={{ display: "inline-flex", alignItems: "center", gap: 5, ...TYPE.meta, fontWeight: 500, color: BRAND.indigo, background: "none", border: "none", cursor: "pointer", padding: "2px 4px" }}>
+            <Plus size={13} color={BRAND.indigo} /> Create project "{row.project_proposed_name}"
+          </button>
+        ) : tagState === "inferred" ? (
           // Inferred ink, not a pill: secondary-gray + dotted underline + an
           // "inferred" label carrying the not-yet-confirmed meaning in words.
-          // One tap confirms (existing match) or creates (new name).
-          <button type="button" onClick={tagState === "create" ? createProposedTag : confirmProposedTag} title="Confirm tag" style={{ display: "inline-flex", alignItems: "baseline", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
+          // One tap confirms the existing-match tag in place.
+          <button type="button" onClick={confirmProposedTag} title="Confirm tag" style={{ display: "inline-flex", alignItems: "baseline", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
             <span style={{ ...TYPE.meta, color: BRAND.secondaryText, borderBottom: `1px dotted ${BRAND.slateMedium}` }}>{row.project_proposed_name}</span>
             <span style={{ ...TYPE.label, fontSize: "0.625rem", color: BRAND.secondaryText }}>inferred</span>
           </button>

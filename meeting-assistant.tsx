@@ -3190,7 +3190,17 @@ function VerificationRow({
   // tested pure transform; one tap on a create proposal creates the project and
   // tags with it. Left untouched, nothing commits (U1).
   const confirmProposedTag = () => onChange(confirmExistingTag(row, projects));
-  const createProposedTag = () => pickProject({ kind: "new_project", name: row.project_proposed_name! });
+  // Guard the async create against a double-tap: without it, a second tap before
+  // the row re-renders to confirmed fires createProject twice, leaving a
+  // duplicate/orphan project. A ref blocks re-entry synchronously (no stale
+  // closure) within the window; it clears once the create resolves.
+  const creatingRef = useRef(false);
+  const createProposedTag = async () => {
+    if (creatingRef.current) return;
+    creatingRef.current = true;
+    try { await pickProject({ kind: "new_project", name: row.project_proposed_name! }); }
+    finally { creatingRef.current = false; }
+  };
   const clearProposedTag = () => onChange({ ...row, project_proposed_name: null });
 
   return (

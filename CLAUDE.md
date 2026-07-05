@@ -340,9 +340,37 @@ Build and keep all of this working (full detail in spec):
     through `fromDateInput` to clear the same latent UTC-midnight off-by-one (confirmed live at review, deferred).
   - **Cadence options** (Daily + Custom weekday picker, ideation ideas 3-5) remain **queued** — own
     brainstorm/plan pending. <!-- Updated 2026-06-20: date-backfill BUILT (U1-U4, 143 tests green); cadence queued -->
+- **Inferred project-tag confirmation (ratify by default) — BUILT (2026-07-05):** second feedback item,
+  run ideate → brainstorm → plan → build on branch `feat/inferred-tag-confirmation` via `ce-work`.
+  Artifacts: ideation `docs/ideation/2026-06-24-tag-confirmation-model-ideation.html`; requirements
+  `docs/brainstorms/2026-07-03-tag-confirmation-model-requirements.md`; plan
+  `docs/plans/2026-07-03-001-feat-inferred-tag-confirmation-plan.md` (Standard, 4 units R1-R12). Change:
+  no AI-proposed project tag applies without an explicit tap. U1 deletes the accept-time auto-apply
+  (pure exported `resolveAcceptedTags` = identity on `project_id`, the guarded seam that restores
+  surface-specs R20); U2 retires the amber "Tag: X?" pill for the app's inferred-ink treatment
+  (secondary-gray + dotted underline + "inferred" label mirroring the due-date block) with one-tap
+  in-place confirm (`classifyProposedTag` → confirmed|inferred|create|none; `confirmExistingTag`) plus
+  change/clear affordances; U3 renders a genuinely new name as a distinct `Plus` + "Create project X"
+  action (one tap creates+tags, render-time create↔inferred reclassification); U4 surfaces the
+  recommendation at the top of the retag picker under "Recommended" (`buildRecommendedOptions`,
+  empty-query-gated, `active = -1` unchanged so nothing pre-selects). **No schema bump / no migration**
+  (reuses `project_id` + `project_proposed_name`; confirmed ⟺ `project_id` set, inferred ⟺ name set with
+  `project_id` null). Pure helpers unit-tested; **165 tests green** (was 143; +22 across
+  `verify-merge`/`tag-classify`/`picker-recommended`), Vite build clean. A high-effort `/code-review`
+  ran post-build: fixed the one new bug (double-tap create → orphan project, ref-guarded); the other
+  four findings deferred as pre-existing/plan-intended (see Open follow-ups). **Not yet pasted into
+  claude.ai.** <!-- Added 2026-07-05: tag-confirmation BUILT (U1-U4, 165 tests green) -->
 - **Open follow-ups:** whether ranking/threshold tuning becomes a named task; whether U9's cockpit
   rendering can truly parallel the design pass; optional re-run of the truncated research
   verification phase; edit/accept/dismiss-rate counters in `app:meta` as an extraction-trust metric
-  (cheap add, pairs with the dismiss reasons that shipped in the plan). <!-- Added 2026-06-12 -->
+  (cheap add, pairs with the dismiss reasons that shipped in the plan). **From the 2026-07-05
+  tag-confirmation review (deferred by decision):** (1) duplicate-named projects — one-tap confirm and
+  the recommendation resolve a proposed name to the *first* same-named project (`matchProjectByName`
+  first-match, pre-existing to the old auto-apply); route through the picker to disambiguate when 2+
+  share a name. (2) one-tap "Create project X" persists immediately with no in-flow undo and orphans on
+  abandon — plan-intended (R10/KD4) + pre-existing to the picker's create row; pairs with the deferred
+  post-accept recovery (origin KD5). (3) the recommended existing project double-lists in the retag
+  picker (Recommended + Recent/Projects) — deliberate per plan KTD6 (mirrors the Recent double-listing);
+  optional dedup if the picker feels noisy. <!-- Updated 2026-07-05: + tag-confirmation review residuals -->
 
 <!-- Updated 2026-06-20: status synced after post-testing feedback ideate -> brainstorm -> plan cycle (date-backfill planned, cadence queued) -->

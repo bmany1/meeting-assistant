@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   proposalToItem,
+  resolveAcceptedTags,
   applyAcceptToMeetingData,
   applyAcceptToProjectData,
   resolveCompletions,
@@ -17,6 +18,7 @@ import {
   storage,
   KEY,
   type Proposal,
+  type Project,
   type SourceRef,
   type Item,
   type StaleInput,
@@ -36,6 +38,9 @@ function prop(p: Partial<Proposal>): Proposal {
     inferred: { due: false, owner: true }, ...p,
   };
 }
+function proj(name: string, id: string): Project {
+  return { id, name, status: "active", target_date: null, dot_color: "#2C2A4A", created_at: NOW };
+}
 function openItem(text: string, id: string): Item {
   const it: Item = {
     id, key: "", kind: "todo", text, owner: "i_owe", waiting_on: null, priority: "Medium", due_date: null,
@@ -52,6 +57,43 @@ describe("proposalToItem", () => {
     expect(it.status).toBe("open");
     expect(it.due_confirmed).toBe(false); // accept does NOT auto-confirm inference
     expect(it.key).toBe(ledgerItemKey({ text: "send the deck", source: SRC, occurrence: 0 }));
+  });
+});
+
+describe("U1: resolveAcceptedTags — commit applies only user-confirmed tags (R1/R2/R3, restores R20)", () => {
+  const projects = [proj("Apollo", "pr_apollo")];
+
+  it("leaves an unconfirmed row whose proposed name matches an existing project at project_id null (AE1 — deletion regression guard)", () => {
+    const rows = [prop({ project_id: null, project_proposed_name: "Apollo" })];
+    const out = resolveAcceptedTags(rows, projects);
+    // No name-matching at commit: an existing-name match still requires an
+    // explicit confirm during verification, so it stays untagged here.
+    expect(out[0].project_id).toBe(null);
+  });
+
+  it("passes a confirmed row (project_id set) through unchanged", () => {
+    const rows = [prop({ project_id: "pr_apollo", project_proposed_name: null })];
+    const out = resolveAcceptedTags(rows, projects);
+    expect(out[0].project_id).toBe("pr_apollo");
+  });
+
+  it("a non-matching (new) proposed name commits untagged with no proposed-name field on the item", () => {
+    const rows = [prop({ project_id: null, project_proposed_name: "Brand new project" })];
+    const out = resolveAcceptedTags(rows, projects);
+    expect(out[0].project_id).toBe(null);
+    const item = proposalToItem(out[0], NOW);
+    expect(item.project_id).toBe(null);
+    expect("project_proposed_name" in item).toBe(false);
+  });
+
+  it("a mixed batch keeps only the confirmed project_ids", () => {
+    const rows = [
+      prop({ id: "a", project_id: "pr_apollo", project_proposed_name: null }),
+      prop({ id: "b", project_id: null, project_proposed_name: "Apollo" }),
+      prop({ id: "c", project_id: null, project_proposed_name: "Nonexistent" }),
+    ];
+    const out = resolveAcceptedTags(rows, projects);
+    expect(out.map((r) => r.project_id)).toEqual(["pr_apollo", null, null]);
   });
 });
 

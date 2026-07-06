@@ -1409,6 +1409,20 @@ export function proposalToDecision(p: Proposal, now = nowISO()): Decision {
   return d;
 }
 
+// The commit-time tag rule. Ratify-by-default: the accept step applies ONLY
+// the tags the user confirmed during verification (rows with project_id set).
+// It performs no name-matching and no tag application of its own, so an
+// unconfirmed proposal (project_id null, whether or not project_proposed_name
+// matches an existing project) stays untagged and, since proposalToItem writes
+// only project_id, commits with no tag. (R1/R2/R3; restores surface-specs R20.)
+// `projects` is kept in the signature as the guarded seam: the deleted
+// auto-apply lived here, and the U1 unit test fails if any name-matching is
+// reintroduced into this function.
+export function resolveAcceptedTags<T extends { project_id: string | null }>(rows: T[], projects: Project[]): T[] {
+  void projects;
+  return rows.map((r) => r);
+}
+
 // Resolve which open to-dos a set of completion proposals marks done (best
 // token-set match per completion, above threshold). Returns a Set of item ids.
 export function resolveCompletions(openItems: Item[], completionTexts: string[], threshold = TUNING.COMPLETION_THRESHOLD): Set<string> {
@@ -2652,11 +2666,40 @@ export function ProjectDot({ color, size = 6 }: { color: string; size?: number }
 }
 
 interface PickerOption {
-  group: "Recent" | "Meetings" | "Projects";
+  group: "Recommended" | "Recent" | "Meetings" | "Projects";
   destination: Destination;
   label: string;
   meta?: string;
   dot?: string;
+}
+
+// Case-insensitive project-name match — the single rule for turning a proposed
+// name into an existing project across classify / confirm / recommend.
+export function matchProjectByName(projects: Project[], name: string): Project | undefined {
+  const n = name.trim().toLowerCase();
+  return n ? projects.find((p) => p.name.toLowerCase() === n) : undefined;
+}
+
+// Build the "Recommended" option surfaced at the top of a verification retag
+// picker. An existing-name match injects that project; a name matching nothing
+// injects a create-new destination (bypassing the picker's normal "must type to
+// create" rule, since the name comes from the recommendation, not the search
+// box). Gated to an empty query — mirrors the Recent group's !q gate — so a
+// typed search hides it and falls through to the normal typed behavior rather
+// than keeping the list non-empty. Nothing here pre-selects: these are just
+// options in the list; the picker still opens with active = -1. (R11, R12.)
+export function buildRecommendedOptions(
+  recommended: { name: string } | null | undefined,
+  projects: Project[],
+  query: string
+): PickerOption[] {
+  if (query.trim()) return [];
+  const name = recommended?.name.trim();
+  if (!name) return [];
+  const match = matchProjectByName(projects, name);
+  return match
+    ? [{ group: "Recommended", destination: { kind: "project", id: match.id }, label: match.name, dot: match.dot_color }]
+    : [{ group: "Recommended", destination: { kind: "new_project", name }, label: `Create project "${name}"` }];
 }
 
 // The signature combobox. Reused by Capture (primary) and Verification retag.
@@ -2668,11 +2711,13 @@ function DestinationPicker({
   onClose,
   allowProjects = true,
   allowMeetings = true,
+  recommended,
 }: {
   onSelect: (d: Destination) => void;
   onClose: () => void;
   allowProjects?: boolean;
   allowMeetings?: boolean;
+  recommended?: { name: string };
 }) {
   const { meetings, projects, ledger } = useApp();
   const [query, setQuery] = useState("");
@@ -2728,7 +2773,10 @@ function DestinationPicker({
     if (allowMeetings) createRows.push({ group: "Meetings", destination: { kind: "new_meeting", name: typed, cadence: "Weekly" }, label: `Create new meeting "${typed}"` });
     if (allowProjects) createRows.push({ group: "Projects", destination: { kind: "new_project", name: typed }, label: `Create new project "${typed}"` });
   }
-  const flat = [...options, ...createRows];
+  // Recommended (verification retag only) surfaces at the very top, ahead of
+  // Recent. Empty-query-gated inside the helper; nothing pre-selects.
+  const recommendedOpts = allowProjects ? buildRecommendedOptions(recommended, projects, query) : [];
+  const flat = [...recommendedOpts, ...options, ...createRows];
 
   const meetingNames = meetings.map((m) => m.name);
   const projectNames = projects.map((p) => p.name);
@@ -2754,7 +2802,7 @@ function DestinationPicker({
 
   const degrade = options.length <= TUNING.PICKER_DEGRADE_MAX && !q;
   let renderIndex = -1;
-  const groups: PickerOption["group"][] = ["Recent", "Meetings", "Projects"];
+  const groups: PickerOption["group"][] = ["Recommended", "Recent", "Meetings", "Projects"];
 
   return (
     <div
@@ -3065,6 +3113,37 @@ export function DismissReasonControl({ onPick, onCancel }: { onPick: (r: Dismiss
 
 type VProposal = Proposal & { _dismissed?: boolean; _dismissReason?: DismissReason; _ghosted?: boolean; _ghostTomb?: TombstoneRecord; _restored?: boolean };
 
+// The four render states of a row's project tag, decided from project_id,
+// project_proposed_name, and the CURRENT project list (render-time lookup, so a
+// name that becomes a real project mid-verification reclassifies from create to
+// inferred on the next render). Only project_id is written at commit, so every
+// non-confirmed state carries no tag into storage. Single source of truth for
+// both the render and the one-tap handlers. (KTD3, KTD4.)
+export type ProposedTagState = "confirmed" | "inferred" | "create" | "none";
+export function classifyProposedTag(
+  row: { project_id: string | null; project_proposed_name: string | null },
+  projects: Project[]
+): ProposedTagState {
+  if (row.project_id && projects.some((p) => p.id === row.project_id)) return "confirmed";
+  const name = row.project_proposed_name;
+  if (!name) return "none";
+  return matchProjectByName(projects, name) ? "inferred" : "create";
+}
+
+// One-tap confirm for an inferred (existing-match) tag: resolve the proposed
+// name to the existing project id and null the proposed name, flipping the row
+// in place to confirmed. A non-matching name is left untouched (that is the
+// create path, which creates a project as a side effect and is handled in the
+// component). (R5.)
+export function confirmExistingTag<T extends { project_id: string | null; project_proposed_name: string | null }>(
+  row: T,
+  projects: Project[]
+): T {
+  if (!row.project_proposed_name) return row;
+  const match = matchProjectByName(projects, row.project_proposed_name);
+  return match ? { ...row, project_id: match.id, project_proposed_name: null } : row;
+}
+
 function VerificationRow({
   row,
   onChange,
@@ -3103,6 +3182,27 @@ function VerificationRow({
     setRetag(false);
   };
 
+  // Which of the four tag states this row is in, decided from the current
+  // project list (render-time; a name that becomes a real project mid-session
+  // reclassifies create -> inferred on the next render).
+  const tagState = classifyProposedTag(row, projects);
+  // One tap on an inferred (existing-match) tag confirms it in place via the
+  // tested pure transform; one tap on a create proposal creates the project and
+  // tags with it. Left untouched, nothing commits (U1).
+  const confirmProposedTag = () => onChange(confirmExistingTag(row, projects));
+  // Guard the async create against a double-tap: without it, a second tap before
+  // the row re-renders to confirmed fires createProject twice, leaving a
+  // duplicate/orphan project. A ref blocks re-entry synchronously (no stale
+  // closure) within the window; it clears once the create resolves.
+  const creatingRef = useRef(false);
+  const createProposedTag = async () => {
+    if (creatingRef.current) return;
+    creatingRef.current = true;
+    try { await pickProject({ kind: "new_project", name: row.project_proposed_name! }); }
+    finally { creatingRef.current = false; }
+  };
+  const clearProposedTag = () => onChange({ ...row, project_proposed_name: null });
+
   return (
     <Card pad={SPACE.md} style={{ opacity: row._ghosted && !row._restored ? 0.6 : 1 }}>
       {/* control / pill row */}
@@ -3110,9 +3210,21 @@ function VerificationRow({
         {row.kind !== "decision" ? <OwnerPill owner={row.owner} waiting_on={row.waiting_on} onClick={flipOwner} /> : <SectionLabel style={{ margin: 0 }}>Decision</SectionLabel>}
         {proj ? (
           <ProjectTagPill name={proj.name} dot={proj.dot_color} onClick={() => setRetag((v) => !v)} />
-        ) : row.project_proposed_name ? (
-          <button type="button" onClick={() => setRetag((v) => !v)} style={{ ...TYPE.meta, fontWeight: 500, background: BRAND.amber20, color: BRAND.slateDark, padding: "2px 9px", borderRadius: RADIUS.full, border: `1px dashed ${BRAND.slateLight}`, cursor: "pointer" }}>
-            Tag: {row.project_proposed_name}?
+        ) : tagState === "create" ? (
+          // A genuinely new name reads as an explicit create action (Plus glyph +
+          // "Create" + indigo), visually distinct from confirming a lookalike
+          // existing tag, so a single tap is an informed choice. Mirrors the
+          // picker's "Create new project" row.
+          <button type="button" onClick={createProposedTag} title="Create this project and tag the item" style={{ display: "inline-flex", alignItems: "center", gap: 5, ...TYPE.meta, fontWeight: 500, color: BRAND.indigo, background: "none", border: "none", cursor: "pointer", padding: "2px 4px" }}>
+            <Plus size={13} color={BRAND.indigo} /> Create project "{row.project_proposed_name}"
+          </button>
+        ) : tagState === "inferred" ? (
+          // Inferred ink, not a pill: secondary-gray + dotted underline + an
+          // "inferred" label carrying the not-yet-confirmed meaning in words.
+          // One tap confirms the existing-match tag in place.
+          <button type="button" onClick={confirmProposedTag} title="Confirm tag" style={{ display: "inline-flex", alignItems: "baseline", gap: 6, background: "none", border: "none", cursor: "pointer", padding: "2px 0" }}>
+            <span style={{ ...TYPE.meta, color: BRAND.secondaryText, borderBottom: `1px dotted ${BRAND.slateMedium}` }}>{row.project_proposed_name}</span>
+            <span style={{ ...TYPE.label, fontSize: "0.625rem", color: BRAND.secondaryText }}>inferred</span>
           </button>
         ) : (
           <button type="button" onClick={() => setRetag((v) => !v)} style={{ ...TYPE.meta, background: "none", border: "none", color: BRAND.indigo, cursor: "pointer", padding: "2px 4px" }}>+ tag</button>
@@ -3123,17 +3235,20 @@ function VerificationRow({
         </div>
       </div>
 
-      {row.project_proposed_name && !proj && !retag ? (
+      {(tagState === "inferred" || tagState === "create") && !retag ? (
+        // Secondary affordances under the inferred tag: pick a different project,
+        // or decline it entirely (leaving the item untagged). The confirm/create
+        // action is the one-tap on the tag itself above.
         <div style={{ ...TYPE.meta, marginBottom: 6 }}>
-          <button type="button" onClick={async () => { const existing = projects.find((p) => p.name.toLowerCase() === row.project_proposed_name!.toLowerCase()); await pickProject(existing ? { kind: "project", id: existing.id } : { kind: "new_project", name: row.project_proposed_name! }); }} style={{ color: BRAND.indigo, background: "none", border: "none", cursor: "pointer", padding: 0, fontWeight: 600 }}>Confirm tag</button>
+          <button type="button" onClick={() => setRetag(true)} style={{ color: BRAND.secondaryText, background: "none", border: "none", cursor: "pointer", padding: 0 }}>change</button>
           <span style={{ color: BRAND.slateLight, margin: "0 6px" }}>·</span>
-          <button type="button" onClick={() => onChange({ ...row, project_proposed_name: null })} style={{ color: BRAND.secondaryText, background: "none", border: "none", cursor: "pointer", padding: 0 }}>Remove</button>
+          <button type="button" onClick={clearProposedTag} style={{ color: BRAND.secondaryText, background: "none", border: "none", cursor: "pointer", padding: 0 }}>clear</button>
         </div>
       ) : null}
 
       {retag ? (
         <div style={{ position: "relative", marginBottom: 8 }}>
-          <DestinationPicker allowMeetings={false} onSelect={pickProject} onClose={() => setRetag(false)} />
+          <DestinationPicker allowMeetings={false} onSelect={pickProject} onClose={() => setRetag(false)} recommended={row.project_proposed_name ? { name: row.project_proposed_name } : undefined} />
         </div>
       ) : null}
 
@@ -3253,15 +3368,10 @@ function VerificationSurface() {
 
   const onAccept = async () => {
     setAccepting(true);
-    // resolve still-proposed tags that match an existing project (auto-apply
-    // existing-project matches; new-name proposals require explicit confirm)
-    const accepted = live.map((r) => {
-      if (!r.project_id && r.project_proposed_name) {
-        const match = projects.find((p) => p.name.toLowerCase() === r.project_proposed_name!.toLowerCase());
-        if (match) return { ...r, project_id: match.id };
-      }
-      return r;
-    });
+    // Commit only the tags the user confirmed during verification. No accept-time
+    // auto-apply: an unconfirmed proposal (project_id null) stays untagged even
+    // when its proposed name matches an existing project. (R1/R2/R3; restores R20.)
+    const accepted = resolveAcceptedTags(live, projects);
     // tombstones for dismissed (with reason) — re-extraction will not resurface
     const tombstones: TombstoneRecord[] = rows
       .filter((r) => r._dismissed)

@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ideation: AI-Proposed Tag Confirmation Model</title>
+<style>
+  :root {
+    --indigo: #2C2A4A;
+    --indigo-soft: #ECEBF2;
+    --indigo-line: #C9C6DC;
+    --amber: #F2853C;
+    --amber-soft: #FCEEE2;
+    --amber-line: #F0C9A8;
+    --slate: #26242E;
+    --secondary: #706C82;
+    --line: #E4E2EA;
+    --bg: #FBFAF8;
+    --card: #FFFFFF;
+    --plum: #6E4D73;
+    --info: #2F77E0;
+    --rose: #A65A6E;
+    --radius: 7px;
+    --serif: "Aptos Serif", "Iowan Old Style", "Palatino Linotype", Georgia, "Times New Roman", serif;
+    --sans: "Aptos", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--slate);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    font-feature-settings: "kern", "liga", "calt";
+  }
+  .page { max-width: 940px; margin-inline: auto; padding: 56px 28px 96px; }
+  p, li { max-width: 72ch; }
+  h1, h2, h3 { font-family: var(--serif); color: var(--indigo); line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; }
+  h1 { font-size: 2.15rem; margin: 0 0 10px; }
+  h2 { font-size: 1.5rem; margin: 56px 0 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+  h3 { font-size: 1.18rem; margin: 0 0 4px; color: var(--slate); }
+  a { color: var(--indigo); text-underline-offset: 2px; }
+  code { font-family: "Aptos Mono", "SFMono-Regular", "Cascadia Code", Consolas, monospace; font-size: 0.85em; background: var(--indigo-soft); color: var(--indigo); padding: 1px 5px; border-radius: 4px; }
+  .eyebrow { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--secondary); font-weight: 600; margin: 0 0 12px; }
+  .dek { font-size: 1.12rem; color: var(--secondary); max-width: 70ch; margin: 6px 0 0; }
+  .meta-line { font-size: 0.85rem; color: var(--secondary); margin: 18px 0 0; display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .meta-line strong { color: var(--slate); font-weight: 600; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 8px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; min-width: 120px; }
+  .stat .n { font-family: var(--serif); font-size: 1.5rem; color: var(--indigo); display: block; }
+  .stat .l { font-size: 0.74rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--secondary); }
+
+  section { }
+  .lead { font-size: 1.04rem; }
+
+  figure { margin: 24px 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); padding: 18px; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption { font-size: 0.82rem; color: var(--secondary); margin-top: 10px; max-width: none; }
+
+  .axes { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin-top: 16px; }
+  .axis { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+  .axis .tag { font-family: var(--serif); font-weight: 600; color: var(--indigo); }
+  .axis p { font-size: 0.9rem; color: var(--secondary); margin: 4px 0 0; }
+
+  .fork { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 18px 0; }
+  @media (max-width: 680px) { .fork { grid-template-columns: 1fr; } }
+  .fork .col { border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; background: var(--card); }
+  .fork .col.win { background: var(--indigo-soft); border-color: var(--indigo-line); }
+  .fork .col h3 { color: var(--indigo); }
+  .fork .label { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; margin-bottom: 6px; }
+  .fork .win .label { color: var(--indigo); }
+  .fork .alt .label { color: var(--secondary); }
+  .fork ul { margin: 8px 0 0; padding-left: 18px; }
+  .fork li { font-size: 0.92rem; }
+
+  .jump { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; margin: 16px 0 28px; }
+  .jump .l { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--secondary); font-weight: 600; margin-bottom: 8px; }
+  .jump ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 28px; }
+  @media (max-width: 600px) { .jump ol { columns: 1; } }
+  .jump li { font-size: 0.92rem; margin-bottom: 4px; break-inside: avoid; max-width: none; }
+
+  article.idea { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px; margin: 18px 0; }
+  article.idea.top { border-color: var(--amber-line); box-shadow: 0 1px 0 var(--amber-line); }
+  .idea-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .num { font-family: var(--serif); font-size: 1.25rem; color: var(--indigo); font-weight: 600; }
+  .toppick { font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; color: #92400e; background: var(--amber-soft); border: 1px solid var(--amber-line); border-radius: 999px; padding: 2px 9px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  .chip { font-size: 0.72rem; border-radius: 999px; padding: 3px 10px; border: 1px solid var(--line); background: #F5F4F8; color: var(--secondary); white-space: nowrap; }
+  .chip.axis-chip { background: var(--indigo-soft); color: var(--indigo); border-color: var(--indigo-line); }
+  .idea dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 14px 0 0; }
+  .idea dt { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--secondary); font-weight: 600; padding-top: 2px; }
+  .idea dd { margin: 0; max-width: 70ch; }
+  .idea dd.basis { font-size: 0.95rem; }
+  .basis .k { font-weight: 600; color: var(--indigo); }
+  .idea .desc { margin: 0; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--secondary); }
+  td.r { white-space: nowrap; color: var(--secondary); font-weight: 600; }
+
+  .callout { border: 1px solid var(--amber-line); background: var(--amber-soft); border-radius: var(--radius); padding: 16px 18px; margin: 20px 0; }
+  .callout .label { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; color: #92400e; margin-bottom: 6px; }
+  .callout p { margin: 0; }
+
+  .note { border: 1px solid var(--indigo-line); background: var(--indigo-soft); border-radius: var(--radius); padding: 16px 18px; margin: 20px 0; }
+  .note .label { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; color: var(--indigo); margin-bottom: 6px; }
+  .note p { margin: 0; }
+
+  .refs li { font-size: 0.92rem; margin-bottom: 5px; }
+  footer.composition-signal { margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--line); font-size: 0.78rem; color: var(--secondary); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="eyebrow">Compound Engineering &middot; Ideation</p>
+  <h1>The AI-Proposed Tag Confirmation Model</h1>
+  <p class="dek">When the extractor proposes a project tag for an item, what should happen to it? Today one amber pill produces two opposite outcomes from hidden state. This is the spread of directions for fixing that, with one recommended spine.</p>
+  <div class="meta-line">
+    <span><strong>Date</strong> 2026-06-24</span>
+    <span><strong>Focus</strong> intended confirm/apply model for AI-proposed project tags (incl. "Recommended at top of picker")</span>
+    <span><strong>Mode</strong> repo-grounded</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="n">38&rarr;7</span><span class="l">Raw &rarr; ranked</span></div>
+    <div class="stat"><span class="n">5</span><span class="l">Topic axes</span></div>
+    <div class="stat"><span class="n">5</span><span class="l">Cut / deferred</span></div>
+    <div class="stat"><span class="n">1</span><span class="l">Primary fork</span></div>
+  </div>
+
+  <section id="problem">
+    <h2>The problem</h2>
+    <p class="lead">The extractor can attach one proposed project tag to each item it pulls from a note, stored as <code>project_proposed_name</code>. In the Verification surface the proposal shows as an amber dashed pill: <code>Tag: Atlas migration?</code>. On Accept, the same pill resolves two completely different ways depending on state the user cannot see.</p>
+
+    <figure>
+      <svg viewBox="0 0 720 250" role="img" aria-label="One amber pill splits into two opposite hidden outcomes: existing-project match is applied silently, new project name is dropped silently.">
+        <!-- source pill -->
+        <rect x="24" y="98" width="196" height="52" rx="10" fill="#FCEEE2" stroke="#F0C9A8"/>
+        <text x="122" y="124" text-anchor="middle" font-family="Aptos, sans-serif" font-size="14" fill="#92400e">Tag: Atlas migration?</text>
+        <text x="122" y="142" text-anchor="middle" font-family="Aptos, sans-serif" font-size="10.5" fill="#b07a4a">one amber pill, on Accept</text>
+        <!-- fork node -->
+        <circle cx="300" cy="124" r="5" fill="#706C82"/>
+        <line x1="220" y1="124" x2="295" y2="124" stroke="#706C82" stroke-width="1.5"/>
+        <text x="300" y="92" text-anchor="middle" font-family="Aptos, sans-serif" font-size="11" fill="#706C82" paint-order="stroke" stroke="#FFFFFF" stroke-width="3">hidden state decides</text>
+        <!-- arrows -->
+        <path d="M305 120 C 360 92, 400 70, 442 64" fill="none" stroke="#706C82" stroke-width="1.5" marker-end="url(#ah)"/>
+        <path d="M305 128 C 360 156, 400 178, 442 184" fill="none" stroke="#706C82" stroke-width="1.5" marker-end="url(#ah)"/>
+        <!-- outcome boxes -->
+        <rect x="448" y="34" width="248" height="62" rx="7" fill="#FFFFFF" stroke="#E4E2EA"/>
+        <text x="462" y="58" font-family="Aptos, sans-serif" font-size="12.5" font-weight="600" fill="#26242E">Matches an existing project</text>
+        <text x="462" y="78" font-family="Aptos, sans-serif" font-size="12" fill="#706C82">applied silently (project_id set)</text>
+        <rect x="448" y="154" width="248" height="62" rx="7" fill="#FFFFFF" stroke="#E4E2EA"/>
+        <text x="462" y="178" font-family="Aptos, sans-serif" font-size="12.5" font-weight="600" fill="#26242E">A new project name</text>
+        <text x="462" y="198" font-family="Aptos, sans-serif" font-size="12" fill="#706C82">dropped silently (lost on Accept)</text>
+        <defs>
+          <marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#706C82"/></marker>
+        </defs>
+      </svg>
+      <figcaption>The core defect: one affordance, two outcomes, decided by a condition (does the project already exist?) that is invisible at the pill. The <code>?</code> implies "confirm me," yet the existing-match path applies with no touch at all.</figcaption>
+    </figure>
+
+    <p>This is not only a usability problem. Two of the project's own written laws are broken:</p>
+    <ul>
+      <li><strong>R20 is violated.</strong> The surface spec states "Accept never auto-confirms inference" (<code>surface-specs.md:200</code>). The existing-match auto-apply (<code>onAccept</code>, <code>tsx:3254-3264</code>) does exactly that.</li>
+      <li><strong>The Inferred Ink Rule is violated.</strong> DESIGN.md says an inferred-but-unconfirmed value renders in secondary-text gray with a dotted underline and a small "inferred" tag, and "Not a pill" (<code>DESIGN.md:250, :346</code>). The proposal uses an amber fill pill, which also spends the scarce amber "do-next" signal on something that is not a next action (the One Voice Rule).</li>
+    </ul>
+    <p>One more fact, verified against the code and worth keeping in view: a non-applied proposal is not merely orphaned, it is destroyed. <code>proposalToItem</code> (<code>tsx:1385-1399</code>) writes only <code>project_id</code>; the saved Item has no <code>project_proposed_name</code> field. So a good new-project suggestion the user does not act on vanishes at commit with no record.</p>
+  </section>
+
+  <section id="grounding">
+    <h2>Grounding Context</h2>
+    <h3>Codebase Context</h3>
+    <ul>
+      <li>Both existing-match and new-name proposals land in <code>project_proposed_name</code> at extraction (<code>tsx:1249-1257</code>); the split fires only in <code>onAccept</code> (<code>tsx:3254-3264</code>).</li>
+      <li>The proposed-tag pill renders identically for both cases (<code>tsx:3113-3116</code>). Confirming is a 2-click opt-in: tap the pill, then tap "Confirm tag" in a row that is hidden until then (<code>tsx:3126-3131</code>). No bulk confirm.</li>
+      <li>The due-date field already does inference correctly: secondary-text, dotted underline, "inferred" label, with a one-tap flip to a confirmed Indigo check (<code>tsx:3162-3169</code>). Owner has the same one-tap flip (<code>tsx:3090, :3096</code>). The tag is the one inferred field that does not follow the pattern.</li>
+      <li>The DestinationPicker has a structural no-inference guarantee: nothing is highlighted on open, a stray Enter does nothing (<code>tsx:2679, :2752</code>). It groups Recent / Meetings / Projects and has no "Recommended" concept.</li>
+      <li>The extraction prompt instructs the model to use exactly one existing project name or null (<code>tsx:1140-1141</code>). A non-matching name is therefore off-spec output, not a designed capability.</li>
+      <li>Constraints in force: single <code>.tsx</code> file, React plus lucide-react only, no <code>&lt;form&gt;</code>, <code>window.storage</code> (last-write-wins), schema bumps discouraged and gated on sign-off, AI calls are keyless with <code>max_tokens</code> 1000, no green in the palette, amber is the single scarce signal.</li>
+    </ul>
+    <h3>External Context</h3>
+    <ul>
+      <li><strong>Linear Triage Intelligence</strong> is the closest precedent: it proposes team/project/label per issue, defaults to suggest-only with human approval, and makes auto-apply opt-in and configurable per-property and per-value, marking applied suggestions distinctly from human-set values.</li>
+      <li><strong>No leading product auto-applies an item-level categorical value without an explicit action</strong> unless a rule was pre-configured. Ghost-text systems (Smart Compose, Copilot) make ignoring the natural non-apply; Grammarly and Notion require an explicit accept and keep a persistent provenance marker. Gmail's opt-out category tabs are the anti-model (persistent user backlash).</li>
+      <li><strong>"Undo beats confirm"</strong> holds only when the action is trivially and visibly reversible. It breaks when the user may never notice the action happened, which is the case for a silent tag on a buried to-do.</li>
+      <li><strong>Autocomplete default-highlight hazard</strong> (Baymard): surfacing "Suggested: X" at the top of a list is safe; pre-highlighting it so Enter selects it inflates accidental commits.</li>
+    </ul>
+  </section>
+
+  <section id="axes">
+    <h2>Topic Axes</h2>
+    <div class="axes">
+      <div class="axis"><span class="tag">A &middot; Default-on-accept policy</span><p>Apply, drop, or block an unconfirmed proposed tag on Accept.</p></div>
+      <div class="axis"><span class="tag">B &middot; Existing vs new divergence</span><p>Unify the two cases or deliberately differ, and how each behaves.</p></div>
+      <div class="axis"><span class="tag">C &middot; Visual signaling &amp; affordance</span><p>How proposed/inferred looks, the "?" semantics, the "Recommended at top of picker" ask.</p></div>
+      <div class="axis"><span class="tag">D &middot; Confirmation mechanics &amp; cost</span><p>One-click confirm, opt-out plus undo, bulk confirm, inline vs picker.</p></div>
+      <div class="axis"><span class="tag">E &middot; Reversibility &amp; recovery</span><p>Undo, post-accept retag, catching a wrong apply or a dropped good suggestion.</p></div>
+    </div>
+  </section>
+
+  <section id="decision">
+    <h2>The shape of the decision</h2>
+    <p class="lead">The ideas below converge on a coherent model rather than a grab-bag. The one question that has to be answered first is the policy fork: should an unconfirmed AI tag ever be applied without an explicit touch?</p>
+
+    <div class="fork">
+      <div class="col win">
+        <p class="label">Recommended &middot; ratify by default</p>
+        <h3>Nothing applies without a touch</h3>
+        <ul>
+          <li>Honest by construction: the "?" always means "confirm me."</li>
+          <li>Restores R20; aligns the tag with owner and due-date.</li>
+          <li>Friction is bounded by one-tap confirm and a bulk confirm-all.</li>
+        </ul>
+      </div>
+      <div class="col alt">
+        <p class="label">Counter &middot; keep auto-apply</p>
+        <h3>Auto-apply existing matches, add a loud undo</h3>
+        <ul>
+          <li>Zero clicks for the correct, common case.</li>
+          <li>Self-refutes here: Accept navigates away from Verification, so a 5s undo banner is unreachable by the time it renders.</li>
+          <li>Leaves R20 violated.</li>
+        </ul>
+      </div>
+    </div>
+
+    <figure>
+      <svg viewBox="0 0 720 120" role="img" aria-label="Four evidence sources all point toward ratify-by-default.">
+        <text x="16" y="26" font-family="Aptos, sans-serif" font-size="12" font-weight="600" fill="#706C82">EVIDENCE</text>
+        <g font-family="Aptos, sans-serif" font-size="12" fill="#26242E">
+          <rect x="14" y="40" width="150" height="34" rx="6" fill="#FFFFFF" stroke="#E4E2EA"/><text x="89" y="61" text-anchor="middle">R20 spec rule</text>
+          <rect x="178" y="40" width="150" height="34" rx="6" fill="#FFFFFF" stroke="#E4E2EA"/><text x="253" y="61" text-anchor="middle">Linear default</text>
+          <rect x="342" y="40" width="172" height="34" rx="6" fill="#FFFFFF" stroke="#E4E2EA"/><text x="428" y="61" text-anchor="middle">automation complacency</text>
+          <rect x="528" y="40" width="178" height="34" rx="6" fill="#FFFFFF" stroke="#E4E2EA"/><text x="617" y="55" text-anchor="middle">undo unreachable</text>
+          <text x="617" y="69" text-anchor="middle" font-size="10.5" fill="#706C82">on navigate-away</text>
+        </g>
+        <path d="M360 84 L360 100" stroke="#2C2A4A" stroke-width="1.5" marker-end="url(#ah2)"/>
+        <text x="360" y="115" text-anchor="middle" font-family="Aptos, sans-serif" font-size="12.5" font-weight="600" fill="#2C2A4A">all favor ratify-by-default</text>
+        <defs><marker id="ah2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#2C2A4A"/></marker></defs>
+      </svg>
+      <figcaption>The four independent sources point the same way. The recommended spine is ideas 1, 2, 3, then 4 and 5 as the friction antidote and the honesty fix, with 6 (the original picker ask) and 7 (the reusable primitive) composing on top.</figcaption>
+    </figure>
+  </section>
+
+  <section id="ideas">
+    <h2>Ranked Ideas</h2>
+    <div class="jump">
+      <p class="l">Jump to</p>
+      <ol>
+        <li><a href="#idea1">Ratify by default (resolve at extraction)</a></li>
+        <li><a href="#idea2">Inferred Ink for proposed tags</a></li>
+        <li><a href="#idea3">One-tap confirm</a></li>
+        <li><a href="#idea4">Bulk "Confirm all suggested tags" + undo</a></li>
+        <li><a href="#idea5">Handle new-name proposals honestly</a></li>
+        <li><a href="#idea6">"Recommended" at top of the picker</a></li>
+        <li><a href="#idea7">Inferred confirmation as a reusable primitive</a></li>
+      </ol>
+    </div>
+
+    <article class="idea top" id="idea1">
+      <div class="idea-head">
+        <span class="num">1</span>
+        <h3>Ratify by default: nothing auto-applies on Accept</h3>
+        <span class="toppick">Top pick</span>
+        <span class="chips"><span class="chip axis-chip">Axis A</span><span class="chip">Confidence 90%</span><span class="chip">Complexity Medium</span></span>
+      </div>
+      <p class="desc">Remove the existing-match auto-apply so a proposed tag becomes real only when the user confirms or retags it. The clean implementation moves the existing-match decision from Accept back to extraction (<code>buildProposalsFromParsed</code>, where <code>projByName</code> is already computed), so <code>onAccept</code> stops touching tags entirely and the R20 violation becomes structurally impossible rather than patched. This is the direct answer to the originating question: no, an unconfirmed tag never applies without a touch.</p>
+      <dl>
+        <dt>Axis</dt><dd>A &middot; Default-on-accept policy</dd>
+        <dt>Basis</dt><dd class="basis"><span class="k">direct:</span> <code>onAccept</code> auto-applies existing matches at <code>tsx:3254-3264</code>, contradicting <code>surface-specs.md:200</code> "Accept never auto-confirms inference (R20)." <span class="k">external:</span> Linear Triage defaults to suggest-only with human approval. <span class="k">reasoned:</span> one affordance producing two outcomes from hidden state is a defect; collapsing to a single outcome removes it.</dd>
+        <dt>Rationale</dt><dd>It is the smallest change that makes the spec true again, and it removes the hidden split at the root. Resolving at extraction is strictly better than deleting the branch in place, because it leaves no tag logic in the commit path to drift.</dd>
+        <dt>Downsides</dt><dd>The user who currently coasts on auto-apply for obvious matches now has to touch them. That cost is what ideas 3 and 4 exist to neutralize; without at least one-tap confirm, this would feel like added friction.</dd>
+      </dl>
+    </article>
+
+    <article class="idea" id="idea2">
+      <div class="idea-head">
+        <span class="num">2</span>
+        <h3>Inferred Ink for proposed tags: retire the amber pill, drop the "?"</h3>
+        <span class="chips"><span class="chip axis-chip">Axis C</span><span class="chip">Confidence 92%</span><span class="chip">Complexity Low</span></span>
+      </div>
+      <p class="desc">Render an unconfirmed proposed tag the way the design system already prescribes for inference: the project name in secondary-text gray with a dotted underline and a small "inferred" label, no fill, no question mark. Confirming flips it to the solid Indigo-check project pill. The pattern already exists two rows down on the due-date field, so this is reuse, not invention. The word "inferred" carries the not-yet-confirmed meaning, so the lying "?" disappears.</p>
+
+      <figure>
+        <svg viewBox="0 0 720 150" role="img" aria-label="Before: an amber pill reading Tag colon Atlas migration question mark. After: the words Atlas migration with a dotted underline and an inferred label, plus a one-tap Indigo confirm check.">
+          <text x="16" y="28" font-family="Aptos, sans-serif" font-size="12" font-weight="600" fill="#706C82">TODAY</text>
+          <rect x="16" y="44" width="210" height="48" rx="10" fill="#FCEEE2" stroke="#F0C9A8"/>
+          <text x="121" y="73" text-anchor="middle" font-family="Aptos, sans-serif" font-size="14" fill="#92400e">Tag: Atlas migration?</text>
+          <text x="16" y="118" font-family="Aptos, sans-serif" font-size="11.5" fill="#706C82">amber = "act now" (wrong), the "?" lies</text>
+
+          <path d="M250 68 L320 68" stroke="#2C2A4A" stroke-width="1.5" marker-end="url(#ah3)"/>
+          <text x="285" y="58" text-anchor="middle" font-family="Aptos, sans-serif" font-size="11" fill="#2C2A4A" paint-order="stroke" stroke="#FFFFFF" stroke-width="3">retire amber</text>
+
+          <text x="356" y="28" font-family="Aptos, sans-serif" font-size="12" font-weight="600" fill="#706C82">PROPOSED</text>
+          <text x="356" y="74" font-family="Aptos, sans-serif" font-size="15" fill="#706C82">Atlas migration</text>
+          <line x1="356" y1="80" x2="468" y2="80" stroke="#706C82" stroke-width="1" stroke-dasharray="2 2"/>
+          <text x="480" y="74" font-family="Aptos, sans-serif" font-size="10.5" letter-spacing="0.06em" fill="#706C82">INFERRED</text>
+          <!-- one tap confirm -->
+          <circle cx="368" cy="104" r="9" fill="#2C2A4A"/>
+          <path d="M363 104 l3.5 3.5 l6 -7" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="384" y="108" font-family="Aptos, sans-serif" font-size="12.5" fill="#26242E">one tap to confirm &rarr; solid Indigo pill</text>
+          <defs><marker id="ah3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#2C2A4A"/></marker></defs>
+        </svg>
+        <figcaption>Before and after the visual fix. The confirmed state stays a pill (the design system's intent for a set project); only the unconfirmed state changes to Inferred Ink.</figcaption>
+      </figure>
+
+      <dl>
+        <dt>Axis</dt><dd>C &middot; Visual signaling &amp; affordance</dd>
+        <dt>Basis</dt><dd class="basis"><span class="k">direct:</span> <code>DESIGN.md:250</code> Inferred Ink Rule (secondary gray + dotted underline + "inferred", "Not a pill" at <code>:346</code>); the amber pill at <code>tsx:3113-3116</code> breaks it and the One Voice Rule; the correct pattern is already implemented for due-date at <code>tsx:3162-3169</code>.</dd>
+        <dt>Rationale</dt><dd>This fixes two design-system violations with a pattern that already ships in the same component, so consistency is provable by eye. It also frees the scarce amber signal to mean only "do next."</dd>
+        <dt>Downsides</dt><dd>Inferred Ink is quieter than amber, so a proposed tag draws less attention. That is the intended trade (a proposal should be calm, not alarming), but if the goal were to push the user to tag, a louder treatment would do more.</dd>
+      </dl>
+    </article>
+
+    <article class="idea" id="idea3">
+      <div class="idea-head">
+        <span class="num">3</span>
+        <h3>One-tap confirm</h3>
+        <span class="chips"><span class="chip axis-chip">Axis D</span><span class="chip">Confidence 85%</span><span class="chip">Complexity Low</span></span>
+      </div>
+      <p class="desc">Collapse the two-click confirm (tap pill, then tap "Confirm tag" in a revealed row) into a single tap that flips the inferred tag to confirmed in place, matching how owner and due-date already work. After idea 2 lands, the dotted underline is the affordance that signals "tap me," so the gesture is consistent across every inferred field.</p>
+      <dl>
+        <dt>Axis</dt><dd>D &middot; Confirmation mechanics &amp; cost</dd>
+        <dt>Basis</dt><dd class="basis"><span class="k">direct:</span> owner and due-date already use a single-tap inferred-to-confirmed flip (<code>tsx:3090, :3096</code>); only the tag uses the hidden two-click row (<code>tsx:3126-3131</code>). <span class="k">reasoned:</span> the only honest defense of auto-apply is "it saves clicks"; making confirm a single tap removes that defense.</dd>
+        <dt>Rationale</dt><dd>It makes ratify-by-default cheap, and it unifies the tag interaction with the rest of the surface so there is one mental model for confirming any inferred value. A typical batch of four proposals drops from eight clicks to four (and to one with idea 4).</dd>
+        <dt>Downsides</dt><dd>A single tap on a tag must be clearly distinct from navigating to the project, or a confirm could read as a jump. Worth a quick live check.</dd>
+      </dl>
+    </article>
+
+    <article class="idea" id="idea4">
+      <div class="idea-head">
+        <span class="num">4</span>
+        <h3>Bulk "Confirm all suggested tags" with undo</h3>
+        <span class="chips"><span class="chip axis-chip">Axis D</span><span class="chip">Confidence 72%</span><span class="chip">Complexity Medium</span></span>
+      </div>
+      <p class="desc">Add a single header or bottom-bar action that confirms every live existing-match proposal in one deliberate, visible click, with a transient "N applied &middot; Undo" affordance reusing the existing dismiss-undo timer. This is the friction antidote that makes ratify-by-default viable when a note produces several tagged items, and because the action stays inside Verification (unlike Accept), its undo is actually reachable.</p>
+      <dl>
+        <dt>Axis</dt><dd>D &middot; Confirmation mechanics &amp; cost</dd>
+        <dt>Basis</dt><dd class="basis"><span class="k">external:</span> Linear offers per-property batch approve; automation-complacency research prescribes targeted (not zero) friction. <span class="k">direct:</span> <code>TUNING.DISMISS_UNDO_MS</code> already implements the undo-timer pattern (<code>tsx:104</code>); there is no bulk confirm today.</dd>
+        <dt>Rationale</dt><dd>It preserves the speed of the common case (one click for all obvious matches) while keeping the act explicit and reversible, which is the combination the evidence supports.</dd>
+        <dt>Downsides</dt><dd>Its value depends on idea 1 winning the fork; if auto-apply stays, this is moot. A bulk confirm can also relocate complacency to a single button, so the undo and the count must be genuinely visible.</dd>
+      </dl>
+    </article>
+
+    <article class="idea" id="idea5">
+      <div class="idea-head">
+        <span class="num">5</span>
+        <h3>Handle new-name proposals honestly</h3>
+        <span class="chips"><span class="chip axis-chip">Axis B</span><span class="chip">Confidence 84%</span><span class="chip">Complexity Low</span></span>
+      </div>
+      <p class="desc">A proposed name that does not match an existing project is off-spec model output (the prompt only offers existing names) and is destroyed silently today. Two honest options: (a) strip the non-matching name at parse time so it never appears as a proposal, or (b) render it as visibly distinct (a "new project" glyph or label) so the user can see it would create rather than link. A near-free compounding effect: once a user confirms a new project, its name enters the next extraction's name list, so the new-vs-existing divergence shrinks over time on its own.</p>
+      <dl>
+        <dt>Axis</dt><dd>B &middot; Existing vs new divergence</dd>
+        <dt>Basis</dt><dd class="basis"><span class="k">direct:</span> the prompt instructs "exactly one existing project name or null" (<code>tsx:1140-1141</code>); <code>projByName</code> already distinguishes match from non-match at build time (<code>tsx:1249-1257</code>). <span class="k">reasoned:</span> two different outcomes deserve two legible affordances, or one of them should not be offered at all.</dd>
+        <dt>Rationale</dt><dd>It closes the most insidious half of the bug: the good suggestion that disappears with no trace. Option (a) is the simpler, lower-risk path; option (b) keeps project creation possible from the proposal but makes it deliberate.</dd>
+        <dt>Downsides</dt><dd>Option (a) removes the ability for the model to ever suggest a brand-new project from a note, which is a small capability loss. Option (b) keeps it but adds a second visual state to design. This is the one place to decide how much you value model-suggested project creation.</dd>
+      </dl>
+    </article>
+
+    <article class="idea" id="idea6">
+      <div class="idea-head">
+        <span class="num">6</span>
+        <h3>"Recommended" at the top of the picker, without pre-selection</h3>
+        <span class="chips"><span class="chip axis-chip">Axis C</span><span class="chip">Confidence 70%</span><span class="chip">Complexity Low</span></span>
+      </div>
+      <p class="desc">The original request, made safe against the picker's no-inference guarantee. When a proposal opens the DestinationPicker, surface the recommended project in a "Recommended" group pinned above Recent (or pre-seed the search query so the list filters to it), but keep nothing highlighted, so a stray Enter still does nothing. Surfacing the recommendation collapses the scroll; pre-selecting it would reintroduce the accidental-commit hazard the picker was built to avoid.</p>
+      <dl>
+        <dt>Axis</dt><dd>C &middot; Visual signaling &amp; affordance</dd>
+        <dt>Basis</dt><dd class="basis"><span class="k">direct:</span> the picker keeps <code>active = -1</code> on open and a stray Enter is a no-op (<code>tsx:2679, :2752</code>); pinning a top group preserves that. <span class="k">external:</span> Baymard: surface "Suggested: X" at the top, do not pre-fill a field that submits on Enter.</dd>
+        <dt>Rationale</dt><dd>It delivers the literal ask (the recommendation is one click away, no scrolling) and threads the exact tension the picker's design was built around. Its value rises once ratify-by-default makes the picker a more common confirm path.</dd>
+        <dt>Downsides</dt><dd>On its own this is the smallest idea here, more polish than decision. Pre-seeding the query is the lighter build but can briefly surprise a user who opened the picker meaning to search for something else.</dd>
+      </dl>
+    </article>
+
+    <article class="idea" id="idea7">
+      <div class="idea-head">
+        <span class="num">7</span>
+        <h3>Inferred confirmation as a reusable primitive</h3>
+        <span class="chips"><span class="chip axis-chip">Axis A</span><span class="chip">Leverage</span><span class="chip">Confidence 75%</span><span class="chip">Complexity Low</span></span>
+      </div>
+      <p class="desc">Rather than fixing the tag in isolation, name the pattern: Inferred Ink plus one-tap confirm plus "Accept never applies what was not confirmed" becomes the convention that governs every inferred field. Due-date and owner already follow it; the tag is the laggard; any future inferred field (priority, for example) inherits it for free. This turns a one-off fix into a system rule.</p>
+      <dl>
+        <dt>Axis</dt><dd>A &middot; Default-on-accept policy (leverage)</dd>
+        <dt>Basis</dt><dd class="basis"><span class="k">direct:</span> the <code>inferred: { due, owner }</code> object already models this (<code>tsx:1074</code>) and the visual treatment ships for due-date and owner. <span class="k">reasoned:</span> a single convention prevents each new inferred field from re-litigating the confirm question, and keeps the design system honest by leaving no exceptions.</dd>
+        <dt>Rationale</dt><dd>Highest-leverage framing in the set: it is mostly consistency work, and it makes the tag fix the template the rest of the app follows rather than a special case.</dd>
+        <dt>Downsides</dt><dd>It is a framing more than a feature, so its payoff is realized only when future inferred fields actually arrive. Worth adopting as a stated convention even if the immediate code change is just the tag.</dd>
+      </dl>
+    </article>
+
+    <div class="note">
+      <p class="label">Axis coverage</p>
+      <p>Survivors spread across axes A, B, C, and D. Axis E (reversibility and recovery) has no standalone survivor by deliberate choice: the loud-undo counter-proposal self-refutes because Accept navigates away from Verification, and post-accept recovery of a dropped suggestion needs an additive <code>Item.project_proposed_name</code> field (proposals are destroyed at commit today), which is a data-model change gated on your sign-off. Reversibility is partially served by idea 4's undo on bulk confirm. If recovering dropped suggestions matters to you, that schema question is the thing to raise next.</p>
+    </div>
+  </section>
+
+  <section id="rejected">
+    <h2>Rejection Summary</h2>
+    <table>
+      <thead><tr><th>#</th><th>Idea</th><th>Reason</th></tr></thead>
+      <tbody>
+        <tr><td class="r">C8</td><td>Keep auto-apply, add a loud 5s undo banner</td><td>Self-refutes here: <code>acceptProposals</code> navigates away from Verification, so the undo banner is unreachable by the time it renders. Kept only as the considered counter-fork.</td></tr>
+        <tr><td class="r">C9</td><td>Post-accept recovery of dropped suggestions on committed items</td><td>Deferred: needs an additive <code>Item.project_proposed_name</code> field (the field is not persisted today) requiring data-model sign-off, and is partly moot if idea 5a strips non-matching names.</td></tr>
+        <tr><td class="r">C13</td><td>Remove tagging from Verification, defer it to the cockpit</td><td>Depends on the same schema touch as C9, and moves confirmation away from where the user has the most context (the expanded source quote). UX regression.</td></tr>
+        <tr><td class="r">C14</td><td>Tag per note instead of per item</td><td>Multi-project meeting notes are the common case, not an edge case; single-project routing is already handled at capture time via the destination picker.</td></tr>
+        <tr><td class="r">C10/C12</td><td>Match-quality confidence proxy; provisional-to-authoritative learning</td><td>Folded into idea 5 (the new-vs-existing handling and the free compounding effect).</td></tr>
+        <tr><td class="r">E</td><td>axis: reversibility &amp; recovery</td><td>No standalone survivor by design (see Axis coverage note above); the two candidates were downgraded, not overlooked.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="refs">
+    <h2>External References</h2>
+    <ul class="refs">
+      <li><a href="https://linear.app/docs/triage-intelligence">Linear Triage Intelligence</a> &mdash; suggest-only default, opt-in per-value auto-apply, distinct marking of AI suggestions.</li>
+      <li><a href="https://baymard.com/blog/autocomplete-design">Baymard: Autocomplete UX</a> &mdash; the default-highlight hazard; surface suggestions at top without pre-selecting.</li>
+      <li><a href="https://blog.logrocket.com/ux-design/ux-reversible-actions-framework/">UX for reversible actions</a> &mdash; when undo beats confirm, and when it breaks.</li>
+      <li><a href="https://iterationlayer.com/blog/ai-data-extraction-confidence-scores">Human-in-the-loop with confidence scores</a> &mdash; three-tier routing, and why it needs calibrated scores LLM tag proposals rarely emit.</li>
+      <li><a href="https://www.smashingmagazine.com/2026/02/designing-agentic-ai-practical-ux-patterns/">Designing agentic AI (Smashing)</a> &mdash; the autonomy dial; auto-apply as a tier users graduate into.</li>
+    </ul>
+  </section>
+
+  <footer class="composition-signal">Composed 2026-06-24 by ce-ideate from the in-session request to define the AI-proposed tag confirmation model. Survivors and grounding scratch at <code>/tmp/compound-engineering/ce-ideate/94fac498/</code>.</footer>
+
+</div>
+</body>
+</html>
